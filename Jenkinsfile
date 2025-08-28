@@ -30,7 +30,7 @@ pipeline {
                 echo "Hello Build..."
                 env
                 echo "Hello ${params.PERSON}"
-                each "Triggers: after github-webhook setup"
+                echo "Triggers: after github-webhook setup"
                 """
                 }
             }
