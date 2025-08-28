@@ -53,6 +53,7 @@ pipeline {
             }
             steps {
                 script {
+                    echo "Hello, ${PERSON}, nice to meet you."
                 echo 'Deploying....'
                 }
             }
