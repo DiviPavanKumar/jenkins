@@ -3,32 +3,31 @@
 pipeline {
     // Pre-build section
     agent { label 'AGENT-1' }
-    environment = "Jenkins-practice"
+
+    environment {
+        ENV_NAME = "Jenkins-practice"
+    }
 
     // Build section (stages)
     stages {
         stage('Build') {
             steps {
                 script {
-                    sh """
-                echo "Building Stage"
-                env
-                """
-            }
+                    sh '''
+                        echo "Building Stage"
+                        env
+                    '''
+                }
             }
         }
         stage('Test') {
             steps {
-                script {
                 echo "Testing Stage"
-            }
             }
         }
         stage('Deploy') {
             steps {
-                script {
                 echo "Deploying Stage"
-            }
             }
         }
     }
