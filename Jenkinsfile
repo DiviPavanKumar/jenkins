@@ -48,8 +48,7 @@ pipeline {
                 echo "Deploying Stage"
             }
         }
-        stages {
-			stage('Parameters') {
+        stage('Parameters') {
 				steps {
 					echo "Hello ${params.PERSON}"
 
@@ -62,7 +61,6 @@ pipeline {
 					echo "Password: ${params.PASSWORD}"
 				}
 			}
-		}
     }
 
     // Post-build section
