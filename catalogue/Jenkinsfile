@@ -4,7 +4,7 @@ pipeline {
     agent { label 'AGENT-1' }
 
     environment { 
-        appVersion    = ''
+        appVersion     = ''
         AWS_ACCOUNT_ID = "069233348386"
         AWS_REGION     = "us-east-1"
         REPO_NAME      = "roboshop/catalogue"
@@ -29,26 +29,31 @@ pipeline {
         
         stage('Install Dependencies') {
             steps {
-                sh '''
-                    cd catalogue
-                    npm install --production
-                '''
+                script {
+                    sh '''
+                        cd catalogue
+                        npm install --production
+                    '''
+                }
             }
         }
 
         stage('Docker Build and Push') {
             steps {
-                withAWS(credentials: 'aws-config', region: "${env.AWS_REGION}") {
-                    sh """
-                        aws ecr get-login-password --region ${env.AWS_REGION} | \
-                          docker login --username AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com
+                script {
+                    withAWS(credentials: 'aws-config', region: "${env.AWS_REGION}") {
+                        sh """
+                            aws ecr get-login-password --region ${env.AWS_REGION} | \
+                              docker login --username AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com
 
-                        docker build -t ${env.REPO_NAME}:${env.appVersion} ./catalogue
-                        docker tag ${env.REPO_NAME}:${env.appVersion} ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${env.appVersion}
+                            docker build -t ${env.REPO_NAME}:${env.appVersion} ./catalogue
 
+                            docker tag ${env.REPO_NAME}:${env.appVersion} \
+                              ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${env.appVersion}
 
-                        docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${env.appVersion}
-                    """
+                            docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${env.appVersion}
+                        """
+                    }
                 }
             }
         }
