@@ -20,7 +20,8 @@ pipeline {
                 script {
                     def packageJson = readJSON file: 'catalogue/package.json'
                     echo "Package Name: ${packageJson.name}"
-                    appVersion = ${packageJson.version}"
+                    env.appVersion = packageJson.version
+                    echo "App Version: ${env.appVersion}"
                     // Access other properties as needed, e.g., packageJson.scripts.build
                 }
             }
@@ -66,4 +67,3 @@ pipeline {
         }
     }
 }
-
