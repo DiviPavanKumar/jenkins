@@ -4,6 +4,10 @@ pipeline {
     // Pre-build stage
     agent { label 'AGENT-1' }
 
+    environment { 
+        echo "Package Version: ${packageJson.version}"
+    }
+
     options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds() 
