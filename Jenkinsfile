@@ -1,5 +1,6 @@
+// Basic Syntax
 pipeline {
-    agent any
+    agent AGENT-1
     stages {
         stage ('Build') {
             steps {
