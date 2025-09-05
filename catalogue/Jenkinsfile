@@ -26,20 +26,13 @@ pipeline {
                 }
             }
         }
-        stage('Build Stage') {
+        
+        stage('Install Dependencies') {
             steps {
                 script {
                     sh '''
-                        echo "Building Stage"
-                    '''
-                }
-            }
-        }
-        stage('Testing Stage') {
-            steps {
-                script {
-                    sh '''
-                        echo "Testing Stage"
+                        cd /app 
+                        npm install 
                     '''
                 }
             }
@@ -58,6 +51,7 @@ pipeline {
     post {
         always {
             echo "Always say Hi"
+            deleteDir()
         }
         success {
             echo "Pipeline is Success"
