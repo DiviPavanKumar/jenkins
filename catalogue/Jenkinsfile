@@ -2,49 +2,48 @@
 
 pipeline {
     // Pre-build stage
-    agent {label = 'AGENT-1'}
+    agent { label 'AGENT-1' }
 
-    // build stage
+    // Build stages
     stages {
-        stage ('Build stage') {
+        stage('Build Stage') {
             steps {
                 script {
-                    sh """
-                    echo "Building Stage"
-                    """
+                    sh '''
+                        echo "Building Stage"
+                    '''
                 }
             }
         }
-        stage ('Testing Stage') {
+        stage('Testing Stage') {
             steps {
                 script {
-                    sh """
-                    echo "Testing stage"
-                    """
+                    sh '''
+                        echo "Testing Stage"
+                    '''
                 }
             }
         }
-        stage ('Deploy Stage') {
+        stage('Deploy Stage') {
             steps {
                 script {
-                    sh """
-                    echo "Deploying...."
-                    """
+                    sh '''
+                        echo "Deploying...."
+                    '''
                 }
             }
         }
     }
 
     post {
-        always{
+        always {
             echo "Always say Hi"
-        }git
+        }
         success {
             echo "Pipeline is Success"
         }
         failure {
-            echo "pipeline is failed"
+            echo "Pipeline has Failed"
         }
     }
-
 }
