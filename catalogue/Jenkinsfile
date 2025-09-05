@@ -5,7 +5,7 @@ pipeline {
     agent { label 'AGENT-1' }
 
     environment { 
-        echo "Package Version: ${packageJson.version}"
+        appVersion = ''
     }
 
     options {
@@ -20,7 +20,7 @@ pipeline {
                 script {
                     def packageJson = readJSON file: 'catalogue/package.json'
                     echo "Package Name: ${packageJson.name}"
-                    echo "Package Version: ${packageJson.version}"
+                    appVersion = ${packageJson.version}"
                     // Access other properties as needed, e.g., packageJson.scripts.build
                 }
             }
