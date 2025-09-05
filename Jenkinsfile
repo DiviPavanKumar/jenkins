@@ -1,36 +1,37 @@
 // Basic Syntax
 pipeline {
     agent { label 'AGENT-1' }
+
     stages {
-        stage ('Build') {
+        stage('Build') {
             steps {
                 echo "Building Stage"
             }
         }
-         stage ('Test') {
+        stage('Test') {
             steps {
                 echo "Testing Stage"
             }
-         }
-         stage ('Deploy') {
+        }
+        stage('Deploy') {
             steps {
                 echo "Deploying Stage"
             }
-         }  
+        }
     }
-         post { 
-            always { 
+
+    post { 
+        always { 
             echo 'I will always say Hello again!'
         }
         changed {
-            echo 'current Pipeline’s run has a different completion status from its previous run'
+            echo 'Current pipeline’s run has a different completion status from its previous run'
         }
         failure {
-            echo 'pipeline Failed'
+            echo 'Pipeline Failed'
         }
         success {
-            echo 'pipline Success'
+            echo 'Pipeline Success'
         }
-    } 
-
     }
+}
