@@ -8,6 +8,10 @@ pipeline {
         ENV_NAME = "Jenkins-practice"
     }
 
+    options {
+        timeout(time: 30, unit: 'MINUTES') 
+    }
+
     // Build section (stages)
     stages {
         stage('Build') {
