@@ -10,7 +10,21 @@ pipeline {
 
     options {
         timeout(time: 30, unit: 'MINUTES') 
+        disableConcurrentBuilds()
+        retry(2)
     }
+
+    parameters {
+			string(name: 'PERSON', defaultValue: 'PavanDivi', description: 'Who should I say hello to?')
+
+			text(name: 'BIOGRAPHY', defaultValue: 'DevOps Engineer', description: 'Enter some information about the person')
+
+			booleanParam(name: 'TOGGLE', defaultValue: true, description: 'Toggle this value')
+
+			choice(name: 'CHOICE', choices: ['One', 'Two', 'Three'], description: 'Pick something')
+
+			password(name: 'PASSWORD', defaultValue: 'Password-test', description: 'Enter a password')
+		}
 
     // Build section (stages)
     stages {
@@ -34,6 +48,21 @@ pipeline {
                 echo "Deploying Stage"
             }
         }
+        stages {
+			stage('Parameters') {
+				steps {
+					echo "Hello ${params.PERSON}"
+
+					echo "Biography: ${params.BIOGRAPHY}"
+
+					echo "Toggle: ${params.TOGGLE}"
+
+					echo "Choice: ${params.CHOICE}"
+
+					echo "Password: ${params.PASSWORD}"
+				}
+			}
+		}
     }
 
     // Post-build section
