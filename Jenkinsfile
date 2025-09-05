@@ -23,7 +23,7 @@ pipeline {
 
 			choice(name: 'CHOICE', choices: ['One', 'Two', 'Three'], description: 'Pick something')
 
-			password(name: 'PASSWORD', defaultValue: 'Test', description: 'Enter a password')
+			password(name: 'PASSWORD', defaultValue: 'Test1', description: 'Enter a password')
 		}
 
     // Build section (stages)
