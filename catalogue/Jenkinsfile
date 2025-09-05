@@ -1,11 +1,13 @@
 // Roboshop-catalogue service Jenkins pipeline
 
 pipeline {
-    // Pre-build stage
     agent { label 'AGENT-1' }
 
     environment { 
         appVersion = ''
+        AWS_ACCOUNT_ID = "069233348386"
+        AWS_REGION     = "us-east-1"
+        REPO_NAME      = "roboshop/catalogue"
     }
 
     options {
@@ -13,7 +15,6 @@ pipeline {
         disableConcurrentBuilds() 
     }
 
-    // Build stages
     stages {
         stage('Read package.json') {
             steps {
@@ -21,8 +22,7 @@ pipeline {
                     def packageJson = readJSON file: 'catalogue/package.json'
                     echo "Package Name: ${packageJson.name}"
                     env.appVersion = packageJson.version
-                    echo "App Version: ${packageJson.version}"
-                    // Access other properties as needed, e.g., packageJson.scripts.build
+                    echo "App Version: ${env.appVersion}"
                 }
             }
         }
@@ -32,20 +32,25 @@ pipeline {
                 script {
                     sh '''
                         cd catalogue
-                        npm install 
+                        npm install --production
                     '''
                 }
             }
         }
+
         stage('Docker Build and Push') {
             steps {
-                script {
-                    sh '''
-                        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 069233348386.dkr.ecr.us-east-1.amazonaws.com
-                        docker build -t roboshop/catalogue .
-                        docker tag roboshop/catalogue:latest 069233348386.dkr.ecr.us-east-1.amazonaws.com/roboshop/catalogue:1.0.0
-                        docker push 069233348386.dkr.ecr.us-east-1.amazonaws.com/roboshop/catalogue:1.0.0
-                    '''
+                withAWS(credentials: 'aws-config', region: "${env.AWS_REGION}") {
+                    script {
+                        sh """
+                            aws ecr get-login-password --region ${env.AWS_REGION} | \
+                              docker login --username AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com
+
+                            docker build -t ${env.REPO_NAME}:${env.appVersion} ./catalogue
+                            docker tag ${env.REPO_NAME}:${env.appVersion} ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${env.appVersion}
+                            docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${env.appVersion}
+                        """
+                    }
                 }
             }
         }
