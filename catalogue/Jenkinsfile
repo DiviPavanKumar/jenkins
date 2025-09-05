@@ -37,11 +37,14 @@ pipeline {
                 }
             }
         }
-        stage('Deploy Stage') {
+        stage('Docker Build and Push') {
             steps {
                 script {
                     sh '''
-                        echo "Deploying...."
+                        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 069233348386.dkr.ecr.us-east-1.amazonaws.com
+                        docker build -t roboshop/catalogue .
+                        docker tag roboshop/catalogue:latest 069233348386.dkr.ecr.us-east-1.amazonaws.com/roboshop/catalogue:1.0.0
+                        docker push 069233348386.dkr.ecr.us-east-1.amazonaws.com/roboshop/catalogue:1.0.0
                     '''
                 }
             }
