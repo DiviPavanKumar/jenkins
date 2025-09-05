@@ -1,0 +1,50 @@
+// Roboshop-catalogue service Jenkins pipeline
+
+pipeline {
+    // Pre-build stage
+    agent {label = 'AGENT-1'}
+
+    // build stage
+    stages {
+        stage ('Build stage') {
+            steps {
+                script {
+                    sh """
+                    echo "Building Stage"
+                    """
+                }
+            }
+        }
+        stage ('Testing Stage') {
+            steps {
+                script {
+                    sh """
+                    echo "Testing stage"
+                    """
+                }
+            }
+        }
+        stage ('Deploy Stage') {
+            steps {
+                script {
+                    sh """
+                    echo "Deploying...."
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always{
+            echo "Always say Hi"
+        }git
+        success {
+            echo "Pipeline is Success"
+        }
+        failure {
+            echo "pipeline is failed"
+        }
+    }
+
+}
