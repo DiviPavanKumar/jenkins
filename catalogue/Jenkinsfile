@@ -19,22 +19,20 @@ pipeline {
         stage('Read package.json') {
             steps {
                 script {
+                    sh 'ls -al'
                     def packageJson = readJSON file: 'catalogue/package.json'
-                    echo "Package Name: ${packageJson.name}"
                     env.appVersion = packageJson.version?.toString()
-                    echo "App Version: ${env.appVersion}"
+                    echo "Package version: ${env.appVersion}"
                 }
             }
         }
         
         stage('Install Dependencies') {
             steps {
-                script {
-                    sh '''
-                        cd catalogue
-                        npm install --production
-                    '''
-                }
+                sh '''
+                    cd catalogue
+                    npm install --production
+                '''
             }
         }
 
