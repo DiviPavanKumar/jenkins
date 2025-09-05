@@ -35,11 +35,13 @@ pipeline {
                 }
             }
         }
+
         stage('Test') {
             steps {
                 echo "Testing Stage"
             }
         }
+
         stage('Deploy') {
             input {
                 message "Should we continue?"
@@ -52,15 +54,13 @@ pipeline {
             steps {
                 script {
                     // Use Elvis operator for safe ENV selection
-                    def ENV = params.ENV ?: "dev"
-                    echo "Deploying to environment: ${ENV}"
+                    def targetEnv = params.ENV ?: "dev"
+                    echo "Deploying to environment: ${targetEnv}"
+                    echo "Hello, ${params.PERSON}, nice to meet you."
                 }
             }
-            steps {
-                echo "Hello, ${PERSON}, nice to meet you."
-            }
-
         }
+
         stage('Parameters') {
             steps {
                 echo "Hello ${params.PERSON}"
