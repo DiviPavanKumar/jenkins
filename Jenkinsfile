@@ -56,6 +56,10 @@ pipeline {
                     echo "Deploying to environment: ${ENV}"
                 }
             }
+            steps {
+                echo "Hello, ${PERSON}, nice to meet you."
+            }
+
         }
         stage('Parameters') {
             steps {
