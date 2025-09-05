@@ -14,7 +14,7 @@ pipeline {
         stage('Read package.json') {
             steps {
                 script {
-                    def packageJson = readJSON file: 'package.json'
+                    def packageJson = readJSON file: 'catalogue/package.json'
                     echo "Package Name: ${packageJson.name}"
                     echo "Package Version: ${packageJson.version}"
                     // Access other properties as needed, e.g., packageJson.scripts.build
