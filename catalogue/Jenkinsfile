@@ -2,10 +2,10 @@ pipeline {
     agent { label 'AGENT-1' }
 
     environment { 
-        REGION     = "us-east-1"
-        ACCOUNT_ID = "069233348386"
-        PROJECT    = "roboshop"
-        COMPONENT  = "catalogue"
+        REGION   = "us-east-1"
+        ACC_ID   = "069233348386"
+        PROJECT  = "roboshop"
+        COMPONENT = "catalogue"
     }
 
     options {
@@ -14,14 +14,13 @@ pipeline {
     }
 
     parameters {
-        booleanParam(name: 'deploy', defaultValue: false, description: 'Deploy to environment?')
+        booleanParam(name: 'deploy', defaultValue: false, description: 'Toggle this value')
     }
 
     stages {
         stage('Read package.json') {
             steps {
                 script {
-                    sh 'ls -al'
                     def packageJson = readJSON file: 'catalogue/package.json'
                     env.appVersion = packageJson.version
                     echo "Package version: ${env.appVersion}"
@@ -37,29 +36,24 @@ pipeline {
 
         stage('Unit Testing') {
             steps {
-                script {
-                    sh """
-                    echo "Running Unit Tests..."
-                    """
-                }
+                sh 'echo "unit tests"'
             }
         }
-
-
+        
         stage('Docker Build') {
             steps {
                 script {
                     withAWS(credentials: 'aws-config', region: "${REGION}") {
                         sh """
-                        aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
-                        docker build -t ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${env.appVersion} catalogue/
-                        docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${env.appVersion}
+                        aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com
+                        docker build -t ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${env.appVersion} catalogue/
+                        docker push ${ACC_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${env.appVersion}
                         """
                     }
                 }
             }
         }
-
+        
         stage('Trigger Deploy') {
             when {
                 expression { params.deploy }
@@ -70,17 +64,22 @@ pipeline {
                           string(name: 'appVersion', value: "${env.appVersion}"),
                           string(name: 'deploy_to', value: 'dev')
                       ],
-                      propagate: false, wait: false
+                      propagate: false,
+                      wait: false
             }
         }
     }
 
-    post {
+    post { 
         always { 
-            echo 'Pipeline finished (cleanup)...'
+            echo '🧹 Cleaning workspace...'
             deleteDir()
         }
-        success { echo '✅ Success' }
-        failure { echo '❌ Failed' }
+        success { 
+            echo '✅ Build & push succeeded'
+        }
+        failure { 
+            echo '❌ Build failed'
+        }
     }
 }
