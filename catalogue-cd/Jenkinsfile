@@ -29,6 +29,7 @@ pipeline {
                             # ✅ Update kubeconfig for the target EKS cluster
                             aws eks update-kubeconfig --region "${AWS_REGION}" --name "${PROJECT}-${params.deploy_to}"
                             
+                            kubectl create namespace roboshop
                             # ✅ Verify cluster nodes
                             kubectl get nodes
                             
