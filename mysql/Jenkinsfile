@@ -14,6 +14,10 @@ pipeline {
         disableConcurrentBuilds()
     }
 
+    parameters {
+        string(name: 'appVersion', defaultValue: '1.0.0', description: 'Image version for MySQL')
+    }
+
     stages {
         stage('Docker Build and Push') {
             steps {
