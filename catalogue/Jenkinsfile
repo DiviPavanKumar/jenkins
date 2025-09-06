@@ -6,7 +6,8 @@ pipeline {
     environment { 
         AWS_ACCOUNT_ID = "069233348386"
         AWS_REGION     = "us-east-1"
-        REPO_NAME      = "catalogue"
+        REPO_NAME      = "roboshop/catalogue"
+        SERVICE = "catalogue"
         PROJECT = "roboshop"
     }
 
@@ -48,12 +49,12 @@ pipeline {
                             aws ecr get-login-password --region ${env.AWS_REGION} | \
                               docker login --username AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com
 
-                            docker build -t ${env.REPO_NAME}:${appVersion} ./catalogue
+                            docker build -t ${env.SERVICE}:${appVersion} ./catalogue
 
-                            docker tag ${env.REPO_NAME}:${appVersion} \
-                              ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${appVersion}
+                            docker tag ${env.SERVICE}:${appVersion} \
+                              ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.SERVICE}:${appVersion}
 
-                            docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${appVersion}
+                            docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.SERVICE}:${appVersion}
                         """
                     }
                 }
