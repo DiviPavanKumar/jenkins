@@ -1,5 +1,5 @@
 # ---------- Build Stage ----------
-FROM node:20.11.1-alpine3.21 AS builder
+FROM node:20-alpine3.21 AS builder
 WORKDIR /opt/server
 
 # Copy dependencies first for better caching
@@ -10,7 +10,7 @@ RUN npm ci --omit=dev --unsafe-perm
 COPY . .
 
 # ---------- Runtime Stage ----------
-FROM node:20.11.1-alpine3.21
+FROM node:20-alpine3.21
 RUN addgroup -S roboshop && adduser -S roboshop -G roboshop
 
 # Set environment variables
