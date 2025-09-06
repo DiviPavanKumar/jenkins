@@ -2,34 +2,19 @@ pipeline {
     agent { label 'AGENT-1' }
 
     environment { 
-        appVersion = ''
         REGION     = "us-east-1"
-        ACCOUNT_ID = "069233348386"
-        PROJECT    = "roboshop"
     }
 
     options {
         timeout(time: 30, unit: 'MINUTES') 
         disableConcurrentBuilds()
-        ansiColor('xterm')
     }
-
-    // Uncomment and define parameters as needed
-    /*
-    parameters {
-        string(name: 'PERSON', defaultValue: 'Mr Jenkins', description: 'Who should I say hello to?')
-        text(name: 'BIOGRAPHY', defaultValue: '', description: 'Enter some information about the person')
-        booleanParam(name: 'TOGGLE', defaultValue: true, description: 'Toggle this value')
-        choice(name: 'CHOICE', choices: ['One', 'Two', 'Three'], description: 'Pick something')
-        password(name: 'PASSWORD', defaultValue: 'SECRET', description: 'Enter a password')
-    }
-    */
 
     stages {
         stage('Init') {
             steps {
                 script {
-                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
                         sh """
                             cd aws-eks-terraform/04-acm
                             terraform init -reconfigure
@@ -42,7 +27,7 @@ pipeline {
         stage('Plan') {
             steps {
                 script {
-                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
                         sh """
                             cd aws-eks-terraform/04-acm
                             terraform plan
@@ -55,7 +40,7 @@ pipeline {
         stage('Apply') {
             steps {
                 script {
-                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
                         sh """
                             cd aws-eks-terraform/04-acm
                             terraform apply -auto-approve
@@ -65,16 +50,6 @@ pipeline {
             }
         }
 
-        // Example: trigger another job after ACM
-        // stage('Trigger Security Group') {
-        //     steps {
-        //         script {
-        //             build job: '02-sg',
-        //                   propagate: false,
-        //                   wait: true
-        //         }
-        //     }
-        // }
     }
 
     post {

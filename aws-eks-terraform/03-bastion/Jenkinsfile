@@ -2,23 +2,19 @@ pipeline {
     agent { label 'AGENT-1' }
 
     environment { 
-        appVersion = ''
         REGION     = "us-east-1"
-        ACCOUNT_ID = "069233348386"
-        PROJECT    = "roboshop"
     }
 
     options {
         timeout(time: 30, unit: 'MINUTES') 
         disableConcurrentBuilds()
-        ansiColor('xterm')
     }
 
     stages {
         stage('Init') {
             steps {
                 script {
-                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
                         sh """
                             cd aws-eks-terraform/03-bastion
                             terraform init -reconfigure
@@ -31,7 +27,7 @@ pipeline {
         stage('Plan') {
             steps {
                 script {
-                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
                         sh """
                             cd aws-eks-terraform/03-bastion
                             terraform plan
@@ -44,7 +40,7 @@ pipeline {
         stage('Apply') {
             steps {
                 script {
-                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
                         sh """
                             cd aws-eks-terraform/03-bastion
                             terraform apply -auto-approve
@@ -54,18 +50,7 @@ pipeline {
             }
         }
     }
-
-    // Example of triggering another pipeline
-    // stage('Trigger Security Group') {
-    //     steps {
-    //         script {
-    //             build job: '02-sg',
-    //                   propagate: false,
-    //                   wait: true
-    //         }
-    //     }
-    // }
-
+    
     post {
         always { 
             echo 'I will always say Hello again!'
