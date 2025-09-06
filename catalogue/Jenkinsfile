@@ -7,11 +7,16 @@ pipeline {
         AWS_ACCOUNT_ID = "069233348386"
         AWS_REGION     = "us-east-1"
         REPO_NAME      = "roboshop/catalogue"
+        PROJECT = "roboshop"
     }
 
     options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds() 
+    }
+
+    parameters {
+        booleanParam(name: 'deploy', defaultValue: false, description: 'Toggle this value')
     }
 
     stages {
@@ -51,6 +56,23 @@ pipeline {
                             docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${appVersion}
                         """
                     }
+                }
+            }
+        }
+
+        stage('Trigger Deploy') {
+            when {
+                expression { params.deploy }
+            }
+            steps {
+                script {
+                    build job: 'catalogue-cd',
+                    parameters: [
+                        string(name: 'appVersion', value: "${appVersion}"),
+                        string(name: 'deploy_to', value: 'dev')
+                    ],
+                    propagate: false,
+                    wait: false
                 }
             }
         }

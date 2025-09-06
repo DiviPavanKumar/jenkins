@@ -1,0 +1,60 @@
+// Roboshop-catalogue service Jenkins pipeline
+
+pipeline {
+    agent { label 'AGENT-1' }
+
+    environment { 
+        appVersion = ''
+        AWS_ACCOUNT_ID = "069233348386"
+        AWS_REGION     = "us-east-1"
+        PROJECT        = "roboshop"
+        COMPONENT      = "catalogue"
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        disableConcurrentBuilds() 
+    }
+
+    parameters {
+        string(name: 'appVersion', description: 'Image version of the application')
+        choice(name: 'deploy_to', choices: ['dev', 'qa', 'prod'], description: 'Pick the environment')
+    }
+
+    stages {
+        stage('Deploy') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${env.AWS_REGION}") {
+                        sh """
+                            # ✅ Update kubeconfig for the target EKS cluster
+                            aws eks update-kubeconfig --region "${AWS_REGION}" --name "${PROJECT}-${params.deploy_to}"
+                            
+                            # ✅ Verify cluster nodes
+                            kubectl get nodes
+                            
+                            # ✅ Replace IMAGE_VERSION placeholder in Helm values file
+                            sed -i "s/IMAGE_VERSION/${params.appVersion}/g" "values-${params.deploy_to}.yaml"
+                            
+                            # ✅ Deploy/upgrade Helm chart
+                            helm upgrade --install "${COMPONENT}" -f "values-${params.deploy_to}.yaml" -n "${PROJECT}" .
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Always say Hi"
+            deleteDir()
+        }
+        success {
+            echo "Pipeline is Success"
+        }
+        failure {
+            echo "Pipeline has Failed"
+        }
+    }
+}

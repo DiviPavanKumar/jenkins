@@ -1,0 +1,93 @@
+pipeline {
+    agent { label 'AGENT-1' }
+
+    environment { 
+        appVersion = ''
+        REGION     = "us-east-1"
+        ACCOUNT_ID = "069233348386"
+        PROJECT    = "roboshop"
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES') 
+        disableConcurrentBuilds()
+        ansiColor('xterm')
+    }
+
+    // Uncomment and define parameters as needed
+    /*
+    parameters {
+        string(name: 'PERSON', defaultValue: 'Mr Jenkins', description: 'Who should I say hello to?')
+        text(name: 'BIOGRAPHY', defaultValue: '', description: 'Enter some information about the person')
+        booleanParam(name: 'TOGGLE', defaultValue: true, description: 'Toggle this value')
+        choice(name: 'CHOICE', choices: ['One', 'Two', 'Three'], description: 'Pick something')
+        password(name: 'PASSWORD', defaultValue: 'SECRET', description: 'Enter a password')
+    }
+    */
+
+    stages {
+        stage('Init') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/06-eks-blue-green
+                            terraform init -reconfigure
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Plan') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/06-eks-blue-green
+                            terraform plan
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Apply') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/06-eks-blue-green
+                            terraform apply -auto-approve
+                        """
+                    }
+                }
+            }
+        }
+
+        // stage('Trigger ACM') {
+        //     steps {
+        //         script {
+        //             build job: '04-acm',
+        //                   propagate: false, // even if ACM fails, ingress won't be blocked
+        //                   wait: false       // do not wait for ACM pipeline completion
+        //         }
+        //     }
+        // }
+    }
+
+    post {
+        always { 
+            echo 'I will always say Hello again!'
+            deleteDir()
+        }
+
+        success { 
+            echo 'Hello success'
+        }
+
+        failure { 
+            echo 'Hello Failed'
+        }
+    }
+}

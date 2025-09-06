@@ -1,0 +1,96 @@
+pipeline {
+    agent { label 'AGENT-1' }
+
+    environment { 
+        appVersion = ''
+        REGION     = "us-east-1"
+        ACCOUNT_ID = "069233348386"
+        PROJECT    = "roboshop"
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES') 
+        disableConcurrentBuilds()
+        ansiColor('xterm')
+    }
+
+    // Parameters (uncomment if needed)
+    /*
+    parameters {
+        string(name: 'PERSON', defaultValue: 'Mr Jenkins', description: 'Who should I say hello to?')
+        text(name: 'BIOGRAPHY', defaultValue: '', description: 'Enter some information about the person')
+        booleanParam(name: 'TOGGLE', defaultValue: true, description: 'Toggle this value')
+        choice(name: 'CHOICE', choices: ['One', 'Two', 'Three'], description: 'Pick something')
+        password(name: 'PASSWORD', defaultValue: 'SECRET', description: 'Enter a password')
+    }
+    */
+
+    stages {
+        stage('Init') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/05-ingress-alb
+                            terraform init -reconfigure
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Plan') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/05-ingress-alb
+                            terraform plan
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Apply') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-auth', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/05-ingress-alb
+                            terraform apply -auto-approve
+                        """
+                    }
+                }
+            }
+        }
+
+        // Trigger next pipeline (optional)
+        /*
+        stage('Trigger EKS-BLUE-GREEN') {
+            steps {
+                script {
+                    build job: '06-eks-blue-green',
+                          propagate: false, // even if this fails, pipeline continues
+                          wait: false       // run in parallel
+                }
+            }
+        }
+        */
+    }
+
+    post {
+        always { 
+            echo 'Pipeline finished. Cleaning workspace...'
+            deleteDir()
+        }
+
+        success { 
+            echo 'Pipeline executed successfully ✅'
+        }
+
+        failure { 
+            echo 'Pipeline failed ❌'
+        }
+    }
+}
