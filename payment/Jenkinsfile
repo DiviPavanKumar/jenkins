@@ -25,7 +25,7 @@ pipeline {
             steps {
                 sh '''
                     cd payment
-                    dnf install python3 gcc python3-devel -y
+                    sudo dnf install python3 gcc python3-devel -y
                     pip3 install -r requirements.txt
                 '''
             }
