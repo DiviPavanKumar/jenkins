@@ -11,43 +11,27 @@ pipeline {
 
     options {
         timeout(time: 30, unit: 'MINUTES')
-        disableConcurrentBuilds() 
+        disableConcurrentBuilds()
     }
 
     stages {
-        stage('Read package.json') {
-            steps {
-                script {
-                    sh 'ls -al'
-                    def packageJson = readJSON file: 'mysql/package.json'
-                    appVersion = packageJson.version
-                    echo "package version: ${appVersion}"
-                }
-            }
-        }
-        
-        stage('Install Dependencies') {
-            steps {
-                sh '''
-                    cd mysql
-                    npm install --production
-                '''
-            }
-        }
-
         stage('Docker Build and Push') {
             steps {
                 script {
                     withAWS(credentials: 'aws-config', region: "${env.AWS_REGION}") {
                         sh """
+                            # ✅ Authenticate Docker with ECR
                             aws ecr get-login-password --region ${env.AWS_REGION} | \
                               docker login --username AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com
 
+                            # ✅ Build Docker image
                             docker build -t ${env.REPO_NAME}:${appVersion} ./mysql
 
+                            # ✅ Tag Docker image with ECR repo path
                             docker tag ${env.REPO_NAME}:${appVersion} \
                               ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${appVersion}
 
+                            # ✅ Push Docker image to ECR
                             docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${appVersion}
                         """
                     }
