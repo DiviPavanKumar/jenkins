@@ -5,7 +5,6 @@ pipeline {
 
     environment { 
         appVersion = ''
-        AWS_ACCOUNT_ID = "069233348386"
         AWS_REGION     = "us-east-1"
         PROJECT        = "roboshop"
         COMPONENT      = "catalogue"
