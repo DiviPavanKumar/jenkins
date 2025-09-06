@@ -1,5 +1,3 @@
-// Roboshop-mysql service Jenkins pipeline
-
 pipeline {
     agent { label 'AGENT-1' }
 
@@ -29,14 +27,14 @@ pipeline {
                               docker login --username AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com
 
                             # ✅ Build Docker image
-                            docker build -t ${env.REPO_NAME}:${appVersion} ./mysql
+                            docker build -t ${env.REPO_NAME}:${params.appVersion} ./mysql
 
                             # ✅ Tag Docker image with ECR repo path
-                            docker tag ${env.REPO_NAME}:${appVersion} \
-                              ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${appVersion}
+                            docker tag ${env.REPO_NAME}:${params.appVersion} \
+                              ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${params.appVersion}
 
                             # ✅ Push Docker image to ECR
-                            docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${appVersion}
+                            docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${params.appVersion}
                         """
                     }
                 }
