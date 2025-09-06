@@ -6,8 +6,8 @@ pipeline {
     environment { 
         AWS_ACCOUNT_ID = "069233348386"
         AWS_REGION     = "us-east-1"
-        REPO_NAME      = "roboshop/catalogue"
-        PROJECT = "roboshop"
+        PROJECT        = "roboshop"
+        COMPONENT      = "catalogue"
     }
 
     options {
@@ -25,8 +25,8 @@ pipeline {
                 script {
                     sh 'ls -al'
                     def packageJson = readJSON file: 'catalogue/package.json'
-                    appVersion = packageJson.version
-                    echo "package version: ${appVersion}"
+                    env.appVersion = packageJson.version   // store in env to avoid "def" leak
+                    echo "package version: ${env.appVersion}"
                 }
             }
         }
@@ -45,15 +45,17 @@ pipeline {
                 script {
                     withAWS(credentials: 'aws-config', region: "${env.AWS_REGION}") {
                         sh """
-                            aws ecr get-login-password --region ${env.AWS_REGION} | \
-                              docker login --username AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com
+                        # Ensure repo exists
+                        aws ecr describe-repositories --repository-names ${PROJECT}/${COMPONENT} --region ${AWS_REGION} || \
+                        aws ecr create-repository --repository-name ${PROJECT}/${COMPONENT} --region ${AWS_REGION}
 
-                            docker build -t ${env.REPO_NAME}:${appVersion} ./catalogue
+                        # Login to ECR
+                        aws ecr get-login-password --region ${AWS_REGION} | \
+                          docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
-                            docker tag ${env.REPO_NAME}:${appVersion} \
-                              ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${appVersion}
-
-                            docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${appVersion}
+                        # Build & Push
+                        docker build -t ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${env.appVersion} catalogue/
+                        docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${env.appVersion}
                         """
                     }
                 }
@@ -68,7 +70,7 @@ pipeline {
                 script {
                     build job: 'catalogue-cd',
                     parameters: [
-                        string(name: 'appVersion', value: "${appVersion}"),
+                        string(name: 'appVersion', value: "${env.appVersion}"),
                         string(name: 'deploy_to', value: 'dev')
                     ],
                     propagate: false,
