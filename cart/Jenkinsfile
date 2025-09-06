@@ -41,7 +41,7 @@ pipeline {
                     withAWS(credentials: 'aws-config', region: "${env.AWS_REGION}") {
                         sh """
                             aws ecr get-login-password --region ${env.AWS_REGION} | \
-                              docker login --cartname AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com
+                              docker login --username AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com
 
                             docker build -t ${env.REPO_NAME}:${appVersion} ./cart
 
