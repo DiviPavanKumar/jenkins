@@ -1,0 +1,57 @@
+pipeline {
+    agent { label 'AGENT-1' }
+
+    environment { 
+        AWS_ACCOUNT_ID = "069233348386"
+        AWS_REGION     = "us-east-1"
+        REPO_NAME      = "roboshop/shipping"
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        disableConcurrentBuilds()
+    }
+
+    parameters {
+        string(name: 'appVersion', defaultValue: '1.0.0', description: 'Image version for shipping')
+    }
+
+    stages {
+        stage('Docker Build and Push') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${env.AWS_REGION}") {
+                        sh """
+                            # ✅ Authenticate Docker with ECR
+                            aws ecr get-login-password --region ${env.AWS_REGION} | \
+                              docker login --username AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com
+
+                            # ✅ Build Docker image
+                            docker build -t ${env.REPO_NAME}:${params.appVersion} ./shipping
+
+                            # ✅ Tag Docker image with ECR repo path
+                            docker tag ${env.REPO_NAME}:${params.appVersion} \
+                              ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${params.appVersion}
+
+                            # ✅ Push Docker image to ECR
+                            docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${params.appVersion}
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Always say Hi"
+            deleteDir()
+        }
+        success {
+            echo "Pipeline is Success"
+        }
+        failure {
+            echo "Pipeline has Failed"
+        }
+    }
+}
