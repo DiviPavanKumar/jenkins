@@ -1,5 +1,3 @@
-
-
 // Roboshop-catalogue service Jenkins pipeline
 
 pipeline {
@@ -18,7 +16,7 @@ pipeline {
     }
 
     parameters {
-        string(name: 'appVersion', description: 'Image version of the application')
+        string(name: 'appVersion', defaultValue: 'latest', description: 'Image version of the application')
         choice(name: 'deploy_to', choices: ['dev', 'qa', 'prod'], description: 'Pick the environment to deploy')
     }
 
@@ -28,20 +26,20 @@ pipeline {
                 script {
                     withAWS(credentials: 'aws-config', region: "${REGION}") {
                         sh """
-                            # ✅ Configure kubeconfig for target EKS cluster
-                            aws eks update-kubeconfig --region ${REGION} --name "${PROJECT}-${params.deploy_to}"
+                        # ✅ Configure kubeconfig for target EKS cluster
+                        aws eks update-kubeconfig --region ${REGION} --name "${PROJECT}-${params.deploy_to}"
 
-                            # ✅ Verify cluster connectivity
-                            kubectl get nodes
+                        # ✅ Verify cluster connectivity
+                        kubectl get nodes
 
-                            # ✅ Ensure namespace exists
-                            kubectl apply -f catalogue-cd/namespace.yaml
+                        # ✅ Ensure namespace exists
+                        kubectl apply -f catalogue-cd/namespace.yaml
 
-                            # ✅ Deploy using Helm (override image version without modifying file)
-                            helm upgrade --install ${COMPONENT} catalogue-cd/ \
-                                -f catalogue-cd/values-${params.deploy_to}.yaml \
-                                --set image.tag=${params.appVersion} \
-                                -n ${PROJECT}
+                        # ✅ Deploy using Helm (override image version without modifying file)
+                        helm upgrade --install ${COMPONENT} catalogue-cd/ \
+                            -f catalogue-cd/values-${params.deploy_to}.yaml \
+                            --set image.tag=${params.appVersion} \
+                            -n ${PROJECT}
                         """
                     }
                 }
@@ -51,14 +49,14 @@ pipeline {
 
     post {
         always {
-            echo "Always say Hi"
+            echo "🧹 Cleanup workspace..."
             deleteDir()
         }
         success {
-            echo "Pipeline is Success"
+            echo "✅ Pipeline executed successfully"
         }
         failure {
-            echo "Pipeline has Failed"
+            echo "❌ Pipeline execution failed"
         }
     }
 }
