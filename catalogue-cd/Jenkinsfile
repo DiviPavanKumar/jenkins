@@ -24,7 +24,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    withAWS(credentials: 'aws-auth', region: "${env.REGION}") {
+                    withAWS(credentials: 'aws-config', region: "${env.REGION}") {
                         sh """
                             # ✅ Configure kubeconfig for target EKS cluster
                             aws eks update-kubeconfig --region ${REGION} --name "${PROJECT}-${params.deploy_to}"
