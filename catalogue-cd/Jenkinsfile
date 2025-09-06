@@ -35,13 +35,13 @@ pipeline {
                             kubectl get nodes
 
                             # Create namespace if not exists
-                            kubectl apply -f 01-namespace.yaml
+                            kubectl apply -f catalogue-cd/01-namespace.yaml
 
                             # Replace image tag in Helm values file
-                            sed -i "s/IMAGE_VERSION/${params.appVersion}/g" values-${params.deploy_to}.yaml
+                            sed -i "s/IMAGE_VERSION/${params.appVersion}/g" catalogue-cd/values-${params.deploy_to}.yaml
 
                             # Deploy using Helm
-                            helm upgrade --install ${COMPONENT} -f values-${params.deploy_to}.yaml -n ${PROJECT} .
+                            helm upgrade --install ${COMPONENT} -f catalogue-cd/values-${params.deploy_to}.yaml -n ${PROJECT} catalogue-cd/
                         """
                     }
                 }
