@@ -1,17 +1,20 @@
-// Roboshop-cart service Jenkins pipeline
-
 pipeline {
     agent { label 'AGENT-1' }
 
     environment { 
-        AWS_ACCOUNT_ID = "069233348386"
-        AWS_REGION     = "us-east-1"
-        REPO_NAME      = "roboshop/cart"
+        REGION     = "us-east-1"
+        ACCOUNT_ID = "069233348386"
+        PROJECT    = "roboshop"
+        COMPONENT  = "catalogue"
     }
 
     options {
-        timeout(time: 30, unit: 'MINUTES')
-        disableConcurrentBuilds() 
+        timeout(time: 30, unit: 'MINUTES') 
+        disableConcurrentBuilds()
+    }
+
+    parameters {
+        booleanParam(name: 'deploy', defaultValue: false, description: 'Deploy to environment?')
     }
 
     stages {
@@ -19,53 +22,90 @@ pipeline {
             steps {
                 script {
                     sh 'ls -al'
-                    def packageJson = readJSON file: 'cart/package.json'
-                    appVersion = packageJson.version
-                    echo "package version: ${appVersion}"
+                    def packageJson = readJSON file: 'catalogue/package.json'
+                    env.appVersion = packageJson.version
+                    echo "Package version: ${env.appVersion}"
                 }
             }
         }
-        
+
         stage('Install Dependencies') {
             steps {
-                sh '''
-                    cd cart
-                    npm install --production
-                '''
+                sh 'cd catalogue && npm install'
             }
         }
 
-        stage('Docker Build and Push') {
+        stage('Unit Testing') {
             steps {
                 script {
-                    withAWS(credentials: 'aws-config', region: "${env.AWS_REGION}") {
+                    sh """
+                    echo "Running Unit Tests..."
+                    """
+                }
+            }
+        }
+
+//         stage('Sonar Scan') {
+//     environment {
+//         scannerHome = tool 'sonar-7.2'
+//     }
+//     steps {
+//         script {
+//             withSonarQubeEnv('sonar-7.2') {
+//                 sh """
+//                 ${scannerHome}/bin/sonar-scanner \
+//                   -Dsonar.projectKey=roboshop-catalogue \
+//                   -Dsonar.projectName=roboshop-catalogue \
+//                   -Dsonar.sources=catalogue \
+//                   -Dsonar.exclusions=**/node_modules/**,Dockerfile,**/db/**,Jenkinsfile
+//                 """
+//             }
+//         }
+//     }
+// }
+// // Enable webhook in sonarqube server and wait for results
+// stage ("Quality Gate") {
+// 	steps {
+// 		timeout(time:1, unit: 'HOURS') {
+// 		waitForQualityGate abortPipeline: true }
+// 	}
+// } */
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
                         sh """
-                            aws ecr get-login-password --region ${env.AWS_REGION} | \
-                              docker login --username AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com
-
-                            docker build -t ${env.REPO_NAME}:${appVersion} ./cart
-
-                            docker tag ${env.REPO_NAME}:${appVersion} \
-                              ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${appVersion}
-
-                            docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com/${env.REPO_NAME}:${appVersion}
+                        aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
+                        docker build -t ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${env.appVersion} catalogue/
+                        docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${COMPONENT}:${env.appVersion}
                         """
                     }
                 }
             }
         }
+
+        stage('Trigger Deploy') {
+            when {
+                expression { params.deploy }
+            }
+            steps {
+                build job: 'catalogue-cd',
+                      parameters: [
+                          string(name: 'appVersion', value: "${env.appVersion}"),
+                          string(name: 'deploy_to', value: 'dev')
+                      ],
+                      propagate: false, wait: false
+            }
+        }
     }
 
     post {
-        always {
-            echo "Always say Hi"
+        always { 
+            echo 'Pipeline finished (cleanup)...'
             deleteDir()
         }
-        success {
-            echo "Pipeline is Success"
-        }
-        failure {
-            echo "Pipeline has Failed"
-        }
+        success { echo '✅ Success' }
+        failure { echo '❌ Failed' }
     }
 }
