@@ -6,7 +6,7 @@ pipeline {
     environment { 
         AWS_ACCOUNT_ID = "069233348386"
         AWS_REGION     = "us-east-1"
-        REPO_NAME      = "roboshop/catalogue"
+        REPO_NAME      = "catalogue"
         PROJECT = "roboshop"
     }
 
