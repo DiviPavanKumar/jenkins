@@ -5,7 +5,7 @@ pipeline {
         ACCOUNT_ID   = "069233348386"
         REGION       = "us-east-1"
         PROJECT      = "roboshop"
-        SERVICE_NAME = "cart"
+        SERVICE_NAME = "user"
         PLATFORM     = "amazonaws.com"
     }
 
@@ -22,7 +22,7 @@ pipeline {
         stage('Read Package Version') {
             steps {
                 script {
-                    def packageJson = readJSON file: 'cart/package.json'
+                    def packageJson = readJSON file: 'user/package.json'
                     env.VERSION = packageJson.version   // set globally
                     echo "Package version: ${env.VERSION}"
                 }
@@ -31,7 +31,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'cd cart && npm install'
+                sh 'cd user && npm install'
             }
         }
 
@@ -56,7 +56,7 @@ pipeline {
                 expression { params.deploy }
             }
             steps {
-                build job: 'cart-cd',
+                build job: 'user-cd',
                       parameters: [
                           string(name: 'appVersion', value: "${env.VERSION}"),
                           string(name: 'deploy_to', value: 'dev')
