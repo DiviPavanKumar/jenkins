@@ -15,7 +15,7 @@ pipeline {
         stage('Read Package Version') {
             steps {
                 script {
-                    def packageJson = readJSON file: 'catalogue/package.json'
+                    def packageJson = readJSON file: '${SERVICE_NAME}/package.json'
                     def version = packageJson.version
                     echo "Package version: ${version}"
                 }
@@ -26,7 +26,7 @@ pipeline {
                 script {
                     sh """
                     aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}
-                    docker build -t ${PROJECT}/${SERVICE_NAME} catalogue/
+                    docker build -t ${PROJECT}/${SERVICE_NAME} ${SERVICE_NAME}/
                     docker tag ${PROJECT}/${SERVICE_NAME}:${version} ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}/${PROJECT}/${SERVICE_NAME}:${version}
                     docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}/${PROJECT}/${SERVICE_NAME}:${version}
                     """
