@@ -5,7 +5,8 @@ pipeline {
         ACCOUNT_ID = "069233348386"
         REGION = "us-east-1"
         PROJECT = "roboshop"
-        SERVICE = "catalogue"
+        SERVICE_NAME = "catalogue"
+        PLATFORM = "amazonaws.com"
         VERSION = ""   // define here, will update later
     }
 
@@ -24,10 +25,10 @@ pipeline {
             steps {
                 script {
                     sh """
-                    aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com
-                    docker build -t ${project}/${service} catalogue/
-                    docker tag ${project}/${service}:${version} ${ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com/${project}/${service}:${version}
-                    docker push ${ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com/${project}/${service}:${version}
+                    aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}
+                    docker build -t ${PROJECT}/${SERVICE_NAME} catalogue/
+                    docker tag ${PROJECT}/${SERVICE_NAME}:${version} ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}/${PROJECT}/${SERVICE_NAME}:${version}
+                    docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}/${PROJECT}/${SERVICE_NAME}:${version}
                     """
                 }
             }
