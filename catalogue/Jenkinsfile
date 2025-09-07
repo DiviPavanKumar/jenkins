@@ -7,7 +7,6 @@ pipeline {
         PROJECT      = "roboshop"
         SERVICE_NAME = "catalogue"
         PLATFORM     = "amazonaws.com"
-        VERSION      = ""   // will be updated dynamically
     }
 
     stages {
@@ -15,7 +14,7 @@ pipeline {
             steps {
                 script {
                     def packageJson = readJSON file: 'catalogue/package.json'
-                    env.VERSION = packageJson.version    // store in global env
+                    env.VERSION = packageJson.version   // set globally
                     echo "Package version: ${env.VERSION}"
                 }
             }
@@ -25,11 +24,11 @@ pipeline {
             steps {
                 script {
                     sh """
-                    aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}
+                    aws ecr get-login-password --region ${env.REGION} | docker login --username AWS --password-stdin ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}
 
-                    docker build -t ${PROJECT}/${SERVICE_NAME}:${VERSION} ${SERVICE_NAME}/
-                    docker tag ${PROJECT}/${SERVICE_NAME}:${VERSION} ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}/${PROJECT}/${SERVICE_NAME}:${VERSION}
-                    docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}/${PROJECT}/${SERVICE_NAME}:${VERSION}
+                    docker build -t ${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION} ${env.SERVICE_NAME}/
+                    docker tag ${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION} ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}/${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION}
+                    docker push ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}/${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION}
                     """
                 }
             }
