@@ -1,0 +1,62 @@
+// Roboshop - mysql Deployment Pipeline
+
+pipeline {
+    agent { label 'AGENT-1' }
+
+    environment { 
+        ACCOUNT_ID   = "069233348386"
+        REGION       = "us-east-1"
+        PROJECT      = "roboshop"
+        SERVICE_NAME = "mysql"
+        PLATFORM     = "amazonaws.com"
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES') 
+        disableConcurrentBuilds()
+    }
+
+    parameters {
+        string(name: 'appVersion', description: 'Image version of the application')
+        choice(name: 'deploy_to', choices: ['dev', 'qa', 'prod'], description: 'Target Environment')
+    }
+
+    stages {
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
+                        sh """
+                            echo "Deploying ${SERVICE_NAME}:${params.appVersion} to ${params.deploy_to} cluster"
+
+                            # Update kubeconfig for target cluster
+                            aws eks update-kubeconfig --region ${REGION} --name "${PROJECT}-${params.deploy_to}"
+
+                            # Check cluster connectivity
+                            kubectl get nodes
+
+                            # Replace image tag in Helm values file
+                            sed -i "s/IMAGE_VERSION/${params.appVersion}/g" mysql-cd/values-${params.deploy_to}.yaml
+
+                            # Deploy using Helm
+                            helm upgrade --install ${SERVICE_NAME} -f mysql-cd/values-${params.deploy_to}.yaml -n ${PROJECT} mysql-cd/
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post { 
+        always { 
+            echo "Cleaning workspace..."
+            deleteDir()
+        }
+        success { 
+            echo "✅ Deployment of ${SERVICE_NAME}:${params.appVersion} to ${params.deploy_to} was successful!"
+        }
+        failure { 
+            echo "❌ Deployment failed for ${SERVICE_NAME}:${params.appVersion} in ${params.deploy_to}"
+        }
+    }
+}
