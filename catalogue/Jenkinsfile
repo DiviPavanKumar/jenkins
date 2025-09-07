@@ -1,19 +1,21 @@
 pipeline {
     // Pre build stage
-    agent { label 'AGENT-1'}
- environment { 
-        version = ''
+    agent { label 'AGENT-1' }
+
+    environment { 
+        VERSION = ''
     }
-// build stage
-stages {
-    stage('Read Package Version') {
+
+    // Build stages
+    stages {
+        stage('Read Package Version') {
             steps {
                 script {
                     def packageJson = readJSON file: 'catalogue/package.json'
-                    def env.version = packageJson.version
-                    echo "Package version: ${env.version}"
+                    env.VERSION = packageJson.version
+                    echo "Package version: ${env.VERSION}"
                 }
             }
         }
-}
+    }
 }
