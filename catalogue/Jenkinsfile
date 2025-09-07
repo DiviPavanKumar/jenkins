@@ -2,17 +2,35 @@ pipeline {
     agent { label 'AGENT-1' }
 
     environment { 
-        VERSION = ""   // define here, will update later
+        ACCOUNT_ID = "069233348386"
+        REGION     = "us-east-1"
+        PROJECT    = "roboshop"
+        SERVICE    = "catalogue"
+        VERSION    = ""   // will be updated dynamically
     }
-
 
     stages {
         stage('Read Package Version') {
             steps {
                 script {
                     def packageJson = readJSON file: 'catalogue/package.json'
-                    def version = packageJson.version
-                    echo "Package version: ${version}"
+                    env.VERSION = packageJson.version   // store in env for later stages
+                    echo "Package version: ${env.VERSION}"
+                }
+            }
+        }
+
+        stage('Image Build and Push') {
+            steps {
+                script {
+                    sh """
+                    aws ecr get-login-password --region ${REGION} | \
+                        docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
+
+                    docker build -t ${PROJECT}/${SERVICE}:${VERSION} catalogue/
+                    docker tag ${PROJECT}/${SERVICE}:${VERSION} ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${SERVICE}:${VERSION}
+                    docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${PROJECT}/${SERVICE}:${VERSION}
+                    """
                 }
             }
         }
