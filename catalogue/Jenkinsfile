@@ -5,15 +5,14 @@ pipeline {
         VERSION = ""   // define here, will update later
     }
 
+
     stages {
         stage('Read Package Version') {
             steps {
                 script {
-                    // Read package.json file
                     def packageJson = readJSON file: 'catalogue/package.json'
-
-                    // Assign version into env variable
-                    env.VERSION = packageJson.version
+                    def version = packageJson.version
+                    echo "Package version: ${version}"
                 }
             }
         }
