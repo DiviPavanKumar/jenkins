@@ -16,11 +16,5 @@ pipeline {
                 }
             }
         }
-
-        stage('Print Version') {
-            steps {
-                echo "Package version from package.json = ${env.VERSION}"
-            }
-        }
     }
 }
