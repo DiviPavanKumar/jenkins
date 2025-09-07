@@ -9,6 +9,15 @@ pipeline {
         PLATFORM     = "amazonaws.com"
     }
 
+    options {
+        timeout(time: 30, unit: 'MINUTES') 
+        disableConcurrentBuilds()
+    }
+
+    parameters {
+        booleanParam(name: 'deploy', defaultValue: false, description: 'Toggle this value')
+    }
+
     stages {
         stage('Read Package Version') {
             steps {
@@ -40,6 +49,34 @@ pipeline {
                     }
                 }
             }
+        }
+
+        stage('Trigger Deploy') {
+            when {
+                expression { params.deploy }
+            }
+            steps {
+                build job: 'catalogue-cd',
+                      parameters: [
+                          string(name: 'appVersion', value: "${env.VERSION}"),
+                          string(name: 'deploy_to', value: 'dev')
+                      ],
+                      propagate: false,
+                      wait: false
+            }
+        }
+    }
+
+    post { 
+        always { 
+            echo '🧹 Cleaning workspace...'
+            deleteDir()
+        }
+        success { 
+            echo '✅ Build & push succeeded'
+        }
+        failure { 
+            echo '❌ Build failed'
         }
     }
 }
