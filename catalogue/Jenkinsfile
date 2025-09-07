@@ -20,6 +20,12 @@ pipeline {
             }
         }
 
+        stage('Install Dependencies') {
+            steps {
+                sh 'cd catalogue && npm install'
+            }
+        }
+
         stage('Image Build and Push') {
             steps {
                 script {
