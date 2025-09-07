@@ -2,33 +2,34 @@ pipeline {
     agent { label 'AGENT-1' }
 
     environment { 
-        ACCOUNT_ID = "069233348386"
-        REGION = "us-east-1"
-        PROJECT = "roboshop"
+        ACCOUNT_ID   = "069233348386"
+        REGION       = "us-east-1"
+        PROJECT      = "roboshop"
         SERVICE_NAME = "catalogue"
-        PLATFORM = "amazonaws.com"
-        VERSION = ""   // define here, will update later
+        PLATFORM     = "amazonaws.com"
+        VERSION      = ""   // will be updated dynamically
     }
-
 
     stages {
         stage('Read Package Version') {
             steps {
                 script {
                     def packageJson = readJSON file: 'catalogue/package.json'
-                    def version = packageJson.version
-                    echo "Package version: ${version}"
+                    env.VERSION = packageJson.version    // store in global env
+                    echo "Package version: ${env.VERSION}"
                 }
             }
         }
+
         stage('Image Build and Push') {
             steps {
                 script {
                     sh """
                     aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}
-                    docker build -t ${PROJECT}/${SERVICE_NAME} ${SERVICE_NAME}/
-                    docker tag ${PROJECT}/${SERVICE_NAME}:${version} ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}/${PROJECT}/${SERVICE_NAME}:${version}
-                    docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}/${PROJECT}/${SERVICE_NAME}:${version}
+
+                    docker build -t ${PROJECT}/${SERVICE_NAME}:${VERSION} ${SERVICE_NAME}/
+                    docker tag ${PROJECT}/${SERVICE_NAME}:${VERSION} ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}/${PROJECT}/${SERVICE_NAME}:${VERSION}
+                    docker push ${ACCOUNT_ID}.dkr.ecr.${REGION}.${PLATFORM}/${PROJECT}/${SERVICE_NAME}:${VERSION}
                     """
                 }
             }
