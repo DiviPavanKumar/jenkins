@@ -23,6 +23,7 @@ pipeline {
         stage('Image Build and Push') {
             steps {
                 script {
+                    withAWS(credentials: 'aws-config', region: "${env.REGION}") {
                     sh """
                     aws ecr get-login-password --region ${env.REGION} | docker login --username AWS --password-stdin ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}
 
@@ -30,6 +31,7 @@ pipeline {
                     docker tag ${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION} ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}/${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION}
                     docker push ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}/${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION}
                     """
+                    }
                 }
             }
         }
