@@ -7,6 +7,7 @@ pipeline {
         PROJECT      = "roboshop"
         SERVICE_NAME = "shipping"
         PLATFORM     = "amazonaws.com"
+        VERSION      = "1.0.0"  // <-- define or dynamically fetch later
     }
 
     options {
@@ -18,18 +19,27 @@ pipeline {
         booleanParam(name: 'deploy', defaultValue: false, description: 'Toggle this value')
     }
 
+    stages {
+        stage('Install Dependencies') {
+            steps {
+                sh """
+                echo '📦 Installing MySQL client...'
+                sudo dnf install mysql -y
+                """
+            }
+        }
+
         stage('Image Build and Push') {
             steps {
                 script {
                     withAWS(credentials: 'aws-config', region: "${env.REGION}") {
-                    sh """
-                    aws ecr get-login-password --region ${env.REGION} | docker login --username AWS --password-stdin ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}
+                        sh """
+                        aws ecr get-login-password --region ${env.REGION} | docker login --username AWS --password-stdin ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}
 
-                    docker build -t ${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION} ${env.SERVICE_NAME}/
-                    docker tag ${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION} ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}/${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION}
-                    docker push ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}/${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION}
-                    dnf install mysql -y
-                    """
+                        docker build -t ${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION} ${env.SERVICE_NAME}/
+                        docker tag ${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION} ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}/${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION}
+                        docker push ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}/${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION}
+                        """
                     }
                 }
             }
@@ -49,6 +59,7 @@ pipeline {
                       wait: false
             }
         }
+    }
 
     post { 
         always { 
