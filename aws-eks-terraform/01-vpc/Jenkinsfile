@@ -1,0 +1,83 @@
+pipeline {
+    agent { label 'AGENT-1' }
+
+    environment { 
+        REGION     = "us-east-1"
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES') 
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Init') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/01-vpc
+                            terraform init -reconfigure
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Plan') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/01-vpc
+                            terraform plan
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Apply') {
+            input {
+                message "Should we continue?"
+                ok "Yes, we should."
+                submitter "Infra-Developer"
+            }
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/01-vpc
+                            terraform apply -auto-approve
+                        """
+                    }
+                }
+            }
+        }
+        // Down Stream Job
+        stage('Trigger Security Group') {
+            steps {
+                script {
+                    build job: '02-sg',
+                    propagate: false, // even sg fails, VPC will not be effected
+                    wait: false //VPC will not wait for SG Pipeline completion
+                }
+            }
+        }
+    }
+
+    post {
+        always { 
+            echo 'I will always say Hello again!'
+            deleteDir()
+        }
+
+        success { 
+            echo 'Hello success'
+        }
+
+        failure { 
+            echo 'Hello Failed'
+        }
+    }
+}

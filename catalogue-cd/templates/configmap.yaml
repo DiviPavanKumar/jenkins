@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config-catalogue
+  namespace: roboshop
+  labels:
+    tire: app
+    component: catalogue
+    environment: dev
+    project: roboshop
+data:
+  MONGO: "true"
+  MONGO_URL: "mongodb://mongodb:27017/catalogue"

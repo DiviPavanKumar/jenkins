@@ -1,0 +1,69 @@
+pipeline {
+    agent { label 'AGENT-1' }
+
+    environment { 
+        REGION     = "us-east-1"
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES') 
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Init') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/04-acm
+                            terraform init -reconfigure
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Plan') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/04-acm
+                            terraform plan
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Apply') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
+                        sh """
+                            cd aws-eks-terraform/04-acm
+                            terraform apply -auto-approve
+                        """
+                    }
+                }
+            }
+        }
+
+    }
+
+    post {
+        always { 
+            echo 'I will always say Hello again!'
+            deleteDir()
+        }
+
+        success { 
+            echo 'Hello success'
+        }
+
+        failure { 
+            echo 'Hello Failed'
+        }
+    }
+}
