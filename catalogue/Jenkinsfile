@@ -9,10 +9,10 @@ pipeline {
         stage('Read Package Version') {
             steps {
                 script {
-                    // Debug: show files
-                    sh 'ls -R'
+                    def packageJson = readJSON file: 'catalogue/package.json'
+                    echo "Full package.json content: ${packageJson}"
+                    echo "Version field: ${packageJson.version}"
 
-                    def packageJson = readJSON file: 'catalogue/package.json'  // adjust path if needed
                     env.VERSION = packageJson.version
                     echo "Package version: ${env.VERSION}"
                 }
