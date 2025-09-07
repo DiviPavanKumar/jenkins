@@ -20,14 +20,7 @@ pipeline {
     }
 
     stages {
-        stage('Install Dependencies') {
-            steps {
-                sh """
-                echo '📦 Installing MySQL client...'
-                sudo dnf install mysql -y
-                """
-            }
-        }
+
 
         stage('Image Build and Push') {
             steps {
