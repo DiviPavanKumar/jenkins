@@ -2,20 +2,25 @@ pipeline {
     agent { label 'AGENT-1' }
 
     environment { 
-        VERSION = ''
+        VERSION = ""   // define here, will update later
     }
 
     stages {
         stage('Read Package Version') {
             steps {
                 script {
+                    // Read package.json file
                     def packageJson = readJSON file: 'catalogue/package.json'
-                    echo "Full package.json content: ${packageJson}"
-                    echo "Version field: ${packageJson.version}"
 
+                    // Assign version into env variable
                     env.VERSION = packageJson.version
-                    echo "Package version: ${env.VERSION}"
                 }
+            }
+        }
+
+        stage('Print Version') {
+            steps {
+                echo "Package version from package.json = ${env.VERSION}"
             }
         }
     }
