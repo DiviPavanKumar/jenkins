@@ -15,7 +15,7 @@ pipeline {
         stage('Read Package Version') {
             steps {
                 script {
-                    def packageJson = readJSON file: '${SERVICE_NAME}/package.json'
+                    def packageJson = readJSON file: 'catalogue/package.json'
                     def version = packageJson.version
                     echo "Package version: ${version}"
                 }
