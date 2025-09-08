@@ -56,7 +56,7 @@ pipeline {
                 stage('Trigger EKS') {
                     steps {
                         script {
-                            build job: '06-eks', propagate: false, wait: false
+                            build job: '06-eks-blue-green', propagate: false, wait: false
                         }
                     }
                 }
