@@ -7,7 +7,7 @@ pipeline {
         PROJECT      = "roboshop"
         SERVICE_NAME = "mongodb"
         PLATFORM     = "amazonaws.com"
-        VERSION      = "1.0.1"  // <-- define or dynamically fetch later
+        VERSION      = "1.0.0"  // <-- define or dynamically fetch later
     }
 
     options {
