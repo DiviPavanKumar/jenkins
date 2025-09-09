@@ -8,4 +8,4 @@ volumeBindingMode: WaitForFirstConsumer
 parameters:
   type: gp3
   fsType: ext4
-  zone: us-east-1a
+  # zone: us-east-1a
