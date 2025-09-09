@@ -5,7 +5,7 @@ metadata:
 provisioner: ebs.csi.aws.com
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
-parameters:
-  type: gp3
-  fsType: ext4
+# parameters:
+#   type: gp3
+#   fsType: ext4
   # zone: us-east-1a
