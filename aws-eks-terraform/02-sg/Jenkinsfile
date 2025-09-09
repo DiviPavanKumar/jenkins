@@ -2,7 +2,7 @@ pipeline {
     agent { label 'AGENT-1' }
 
     environment { 
-        REGION     = "us-east-1"
+        REGION = "us-east-1"
     }
 
     options {
@@ -44,7 +44,7 @@ pipeline {
             }
         }
 
-        stage('Bastion EKS ACM') {
+        stage('Bastion & EKS') {
             parallel {
                 stage('Trigger Bastion') {
                     steps {
@@ -60,12 +60,13 @@ pipeline {
                         }
                     }
                 }
-                stage('Trigger ACM') {
-                    steps {
-                        script {
-                            build job: '04-acm', propagate: false, wait: false
-                        }
-                    }
+            }
+        }
+
+        stage('Trigger ACM') {
+            steps {
+                script {
+                    build job: '04-acm', propagate: true, wait: true
                 }
             }
         }
@@ -73,7 +74,7 @@ pipeline {
         stage('Trigger ALB') {
             steps {
                 script {
-                    build job: '05-ingress-alb', propagate: false, wait: false
+                    build job: '05-ingress-alb', propagate: true, wait: false
                 }
             }
         }
@@ -84,13 +85,7 @@ pipeline {
             echo 'I will always say Hello again!'
             deleteDir()
         }
-
-        success { 
-            echo 'Hello success'
-        }
-
-        failure { 
-            echo 'Hello Failed'
-        }
+        success { echo 'Hello success' }
+        failure { echo 'Hello Failed' }
     }
 }
