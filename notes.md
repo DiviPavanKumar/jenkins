@@ -1,59 +1,147 @@
-## Configure OIDC for EKS
+###1. AWS CLI Configuration
 
-EKS needs an **OIDC provider** to enable IAM Roles for Service Accounts (IRSA).  
-Follow these steps:
+Set up AWS credentials:
 
----
+aws configure
+AWS Access Key ID [None]: <your-access-key>
+AWS Secret Access Key [None]: <your-secret-key>
+Default region name [None]: us-east-1
+Default output format [None]:
 
-### 1. Set your cluster name
-```bash
+###2. Install kubectl
+
+Download, install, and verify kubectl:
+
+# Download kubectl binary
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+# Make it executable
+chmod +x kubectl
+mkdir -p ~/.local/bin
+mv kubectl ~/.local/bin/kubectl
+
+# Verify installation
+kubectl version --client
+
+###3. Install eksctl
+
+Download and install eksctl:
+
+ARCH=amd64
+PLATFORM=$(uname -s)_$ARCH
+
+# Download latest eksctl
+curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+
+# Extract and install
+tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+sudo install -m 0755 /tmp/eksctl /usr/local/bin && rm /tmp/eksctl
+
+###4. Connect kubectl to EKS cluster
+
+Update kubeconfig:
+
+aws eks update-kubeconfig --region us-east-1 --name roboshop-dev
+
+# Verify access
+kubectl get namespaces
+
+###5. Get OIDC ID for EKS cluster
+
+Retrieve OIDC provider ID (required for IAM roles for service accounts):
+
 export cluster_name=roboshop-dev
-2. Get the OIDC ID
-bash
-Copy code
 oidc_id=$(aws eks describe-cluster \
   --name $cluster_name \
   --query "cluster.identity.oidc.issuer" \
   --output text | awk -F'/' '{print $5}' | tr -d '"')
-
 echo $oidc_id
-Sample output:
 
-Copy code
-522A91C658724C6DF802119433C93697
-3. Check if OIDC is already configured
-bash
-Copy code
+# Verify OIDC provider exists
 aws iam list-open-id-connect-providers | grep $oidc_id || echo "OIDC provider not found"
-If you see an ARN → OIDC exists
 
-If not → go to step 4
+###6. Install Helm (if not installed)
+# Add EBS CSI driver repo
+helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+helm repo update
 
-4. Create OIDC provider (only if missing)
-bash
-Copy code
-eksctl utils associate-iam-oidc-provider \
-  --cluster $cluster_name \
-  --approve
-5. Verify again
-bash
-Copy code
-aws iam list-open-id-connect-providers | grep $oidc_id
-Sample output:
+# Install the driver
+helm upgrade --install aws-ebs-csi-driver \
+    --namespace kube-system \
+    aws-ebs-csi-driver/aws-ebs-csi-driver
 
-ruby
-Copy code
-arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/522A91C658724C6DF802119433C93697
-Why is this needed?
-OIDC is required for EKS add-ons that need IAM access, such as:
+###7. Create IAM Role for EBS CSI Driver
 
-ALB Ingress Controller
+Create trust policy file (trust.json) for IRSA:
 
-EBS CSI Driver
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::<account-id>:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/<oidc-id>"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "oidc.eks.us-east-1.amazonaws.com/id/<oidc-id>:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+        }
+      }
+    }
+  ]
+}
 
-ExternalDNS
 
-Other controllers that assume IAM roles
+Create the role and attach policy:
 
-yaml
-Copy code
+# Create IAM role
+aws iam create-role \
+  --role-name AmazonEKS_EBS_CSI_DriverRole \
+  --assume-role-policy-document file://trust.json
+
+# Attach EBS CSI policy
+aws iam attach-role-policy \
+  --role-name AmazonEKS_EBS_CSI_DriverRole \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+
+# Verify attached policy
+aws iam list-attached-role-policies --role-name AmazonEKS_EBS_CSI_DriverRole
+
+###8. Create IAM Service Account
+
+Link the IAM role to Kubernetes service account using eksctl:
+
+eksctl create iamserviceaccount \
+  --name ebs-csi-controller-sa \
+  --namespace kube-system \
+  --cluster roboshop-dev \
+  --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+  --approve \
+  --override-existing-serviceaccounts \
+  --region us-east-1
+
+
+Annotate service account with IAM role ARN:
+
+kubectl annotate sa ebs-csi-controller-sa -n kube-system eks.amazonaws.com/role-arn=arn:aws:iam::<account-id>:role/AmazonEKS_EBS_CSI_DriverRole --overwrite
+
+
+Verify the service account:
+
+kubectl describe sa ebs-csi-controller-sa -n kube-system
+
+###9. Verify StorageClass and PVC
+
+Check available storage classes:
+
+kubectl get sc
+
+
+Check PVC status:
+
+kubectl get pvc -n roboshop
+kubectl describe pvc <pvc-name> -n roboshop
+
+
+✅ At this point, the EBS CSI driver is correctly installed and IAM role is linked, allowing PV creation in the cluster.
