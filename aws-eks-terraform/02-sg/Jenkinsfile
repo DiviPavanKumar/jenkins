@@ -66,7 +66,7 @@ pipeline {
         stage('Trigger ACM') {
             steps {
                 script {
-                    build job: '04-acm', propagate: true, wait: true
+                    build job: '04-acm', propagate: false, wait: true
                 }
             }
         }
@@ -74,7 +74,7 @@ pipeline {
         stage('Trigger ALB') {
             steps {
                 script {
-                    build job: '05-ingress-alb', propagate: true, wait: false
+                    build job: '05-ingress-alb', propagate: false, wait: false
                 }
             }
         }
