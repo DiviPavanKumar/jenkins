@@ -4,7 +4,7 @@ metadata:
   name: mysql
   namespace: roboshop
 spec:
-  serviceName: mysql-headless-service  # Must match headless service
+  serviceName: mysql-headless-service   # ✅ Must match headless service name
   replicas: {{ .Values.statefulset.replicas }}
   minReadySeconds: 10
   selector:
@@ -19,16 +19,34 @@ spec:
         project: roboshop
         environment: dev
     spec:
+      serviceAccountName: roboshop-mysql-secret-reader
       terminationGracePeriodSeconds: 10
+      volumes:
+        - name: mysql-secret
+          emptyDir: {}   # ✅ temporary volume shared between initContainer and main container
       containers:
         - name: mysql
-          image: {{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}
+          image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"  # ✅ quotes recommended
+          imagePullPolicy: Always
           volumeMounts:
+            - name: mysql-secret
+              mountPath: /tmp   # ✅ password will be placed here by initContainer
             - name: mysql-storage
               mountPath: /var/lib/mysql
-          envFrom:
-            - secretRef:
-                name: mysql
+      initContainers:
+        - name: fetch-secret
+          image: amazon/aws-cli
+          command:
+            - sh
+            - -c
+            - |
+              aws secretsmanager get-secret-value \
+                --secret-id roboshop/mysql/password \
+                --query SecretString \
+                --output text | jq -r .MYSQL_ROOT_PASSWORD > /tmp/mysql_root_password.txt
+          volumeMounts:
+            - mountPath: /tmp
+              name: mysql-secret
 
   volumeClaimTemplates:
     - metadata:
