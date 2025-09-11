@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config-payment
+  namespace: roboshop
+  labels:
+    tier: app
+    component: payment
+    environment: dev
+    project: roboshop
+data:
+  CART_HOST: "cart"
+  CART_PORT: "8080"
+  USER_HOST: "user"
+  USER_PORT: "8080"
+  AMQP_HOST: "rabbitmq"
