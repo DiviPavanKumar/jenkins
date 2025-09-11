@@ -30,4 +30,4 @@ COPY --chown=roboshop:roboshop payment.ini .
 COPY --chown=roboshop:roboshop *.py .
 
 # Start uWSGI
-CMD ["uwsgi", "--ini", "payment.ini", "--uid", "0", "--gid", "0"]
+CMD ["uwsgi", "--ini", "payment.ini", "--uid", "roboshop", "--gid", "roboshop"]
