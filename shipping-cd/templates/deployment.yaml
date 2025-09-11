@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shipping
+  namespace: roboshop
+  labels: 
+    tire: app
+    component: shipping
+    environment: dev
+    project: roboshop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      tire: app
+      component: shipping
+      environment: dev
+      project: roboshop
+  template:
+    metadata:
+      labels:
+        tire: app
+        component: shipping
+        environment: dev
+        project: roboshop
+    spec:
+      containers:
+        - name: shipping
+          image: pavandivi/shipping:v1
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "200m"
+              memory: "512Mi"
+          envFrom:
+          - configMapRef:
+              name: app-config-shipping
