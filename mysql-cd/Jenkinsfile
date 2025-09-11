@@ -35,8 +35,6 @@ pipeline {
                             # Check cluster connectivity
                             kubectl get nodes
 
-                            kubectl apply -f mysql-cd/templates/sa-mysql-secret-reader.yaml
-
                             # Replace image tag in Helm values file
                             sed -i "s/IMAGE_VERSION/${params.appVersion}/g" mysql-cd/values-${params.deploy_to}.yaml
 
