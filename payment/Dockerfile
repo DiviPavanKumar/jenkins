@@ -14,7 +14,7 @@ WORKDIR /opt/server
 # Runtime dependencies only
 RUN apk add --no-cache pcre
 # Create app user
-RUN addgroup -S roboshop && adduser -S roboshop -G roboshop
+RUN addgroup -S -g 1001 roboshop && adduser -S -u 1001 -G roboshop roboshop
 USER roboshop
 # Copy installed Python packages from builder
 COPY --from=builder /install /usr/local
