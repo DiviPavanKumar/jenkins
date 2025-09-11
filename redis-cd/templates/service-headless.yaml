@@ -15,5 +15,5 @@ spec:
     environment: dev
   ports:
     - protocol: TCP
-      port: 27017
-      targetPort: 27017
+      port: 6379
+      targetPort: 6379
