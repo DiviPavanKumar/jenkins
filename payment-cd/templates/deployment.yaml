@@ -27,6 +27,7 @@ spec:
       containers:
         - name: payment
           image: {{ .Values.deployment.imageURL }}:{{ .Values.deployment.imageVersion }}
+          pullPolicy: Always
           resources:
             requests:
               cpu: "50m"
