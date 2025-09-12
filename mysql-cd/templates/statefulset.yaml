@@ -26,7 +26,7 @@ spec:
           emptyDir: {}
       initContainers:
         - name: fetch-secret
-          image: amazonlinux:2
+          image: amazon/aws-cli
           command:
             - sh
             - -c
