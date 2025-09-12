@@ -27,6 +27,7 @@ spec:
       containers:
         - name: catalogue
           image: {{ .Values.deployment.imageURL }}:{{ .Values.deployment.imageVersion }}
+          imagePullPolicy: Always
           resources:
             requests:
               cpu: "50m"
