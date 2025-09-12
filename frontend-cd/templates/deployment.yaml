@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: roboshop
+  labels: 
+    tier: app
+    component: frontend
+    environment: dev
+    project: roboshop
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      tier: app
+      component: frontend
+      environment: dev
+      project: roboshop
+  template:
+    metadata:
+      labels:
+        tier: app
+        component: frontend
+        environment: dev
+        project: roboshop
+    spec:
+      containers:
+        - name: frontend
+          image: {{ .Values.deployment.imageURL }}:{{ .Values.deployment.imageVersion }}
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "100m"
+              memory: "256Mi"
+          volumeMounts:
+          - name: nginx-conf
+            mountPath: /etc/nginx/nginx.conf
+            subPath: nginx.conf
+            readOnly: true
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: app-config-frontend
+            items:
+              - key: nginx.conf
+                path: nginx.conf

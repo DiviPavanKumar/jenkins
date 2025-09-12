@@ -1,0 +1,69 @@
+pipeline {
+    agent { label 'AGENT-1' }
+
+    environment { 
+        ACCOUNT_ID   = "069233348386"
+        REGION       = "us-east-1"
+        PROJECT      = "roboshop"
+        SERVICE_NAME = "frontend"
+        PLATFORM     = "amazonaws.com"
+        VERSION      = "1.0.0"  // <-- define or dynamically fetch later
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES') 
+        disableConcurrentBuilds()
+    }
+
+    parameters {
+        booleanParam(name: 'deploy', defaultValue: false, description: 'Toggle this value')
+    }
+
+    stages {
+
+
+        stage('Image Build and Push') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${env.REGION}") {
+                        sh """
+                        aws ecr get-login-password --region ${env.REGION} | docker login --username AWS --password-stdin ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}
+
+                        docker build -t ${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION} ${env.SERVICE_NAME}/
+                        docker tag ${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION} ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}/${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION}
+                        docker push ${env.ACCOUNT_ID}.dkr.ecr.${env.REGION}.${env.PLATFORM}/${env.PROJECT}/${env.SERVICE_NAME}:${env.VERSION}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Trigger Deploy') {
+            when {
+                expression { params.deploy }
+            }
+            steps {
+                build job: 'frontend-cd',
+                      parameters: [
+                          string(name: 'appVersion', value: "${env.VERSION}"),
+                          string(name: 'deploy_to', value: 'dev')
+                      ],
+                      propagate: false,
+                      wait: false
+            }
+        }
+    }
+
+    post { 
+        always { 
+            echo '🧹 Cleaning workspace...'
+            deleteDir()
+        }
+        success { 
+            echo '✅ Build & push succeeded'
+        }
+        failure { 
+            echo '❌ Build failed'
+        }
+    }
+}
