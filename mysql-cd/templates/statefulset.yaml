@@ -34,19 +34,28 @@ spec:
               aws secretsmanager get-secret-value \
                 --secret-id roboshop/mysql/password \
                 --query SecretString \
-                --output text | jq -r .MYSQL_ROOT_PASSWORD > /tmp/mysql_root_password.txt
+                --output text | jq -r .MYSQL_ROOT_PASSWORD > /run/secrets/mysql_root_password.txt
           volumeMounts:
             - name: mysql-secret
-              mountPath: /tmp
+              mountPath: /run/secrets
       containers:
         - name: mysql
           image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"
           imagePullPolicy: Always
           command:
-            - /usr/local/bin/entrypoint.sh
+            - sh
+            - -c
+            - |
+              if [ -f /run/secrets/mysql_root_password.txt ]; then
+                export MYSQL_ROOT_PASSWORD=$(cat /run/secrets/mysql_root_password.txt)
+              else
+                echo "❌ Password file not found!"
+                exit 1
+              fi
+              exec /entrypoint.sh mysqld
           volumeMounts:
             - name: mysql-secret
-              mountPath: /tmp
+              mountPath: /run/secrets
             - name: mysql-storage
               mountPath: /var/lib/mysql
 
