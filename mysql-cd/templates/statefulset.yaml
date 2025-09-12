@@ -43,11 +43,7 @@ spec:
           image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"
           imagePullPolicy: Always
           command:
-            - sh
-            - -c
-            - |
-              export MYSQL_ROOT_PASSWORD=$(cat /tmp/mysql_root_password.txt) && \
-              exec docker-entrypoint.sh mysqld
+            - /usr/local/bin/entrypoint.sh
           volumeMounts:
             - name: mysql-secret
               mountPath: /tmp
