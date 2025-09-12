@@ -33,7 +33,7 @@ spec:
             - |
               yum install -y awscli jq && \
               aws secretsmanager get-secret-value \
-                --secret-id arn:aws:secretsmanager:us-east-1:069233348386:secret:roboshop/mysql/password-* \
+                --secret-id arn:aws:secretsmanager:us-east-1:069233348386:secret:roboshop/mysql/password-i5ohIz \
                 --query SecretString \
                 --output text | jq -r .MYSQL_ROOT_PASSWORD > /tmp/mysql_root_password.txt
           env:
