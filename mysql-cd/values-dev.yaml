@@ -1,4 +1,9 @@
+global:
+  awsRegion: us-east-1
+
 statefulset:
   replicas: 1
   imageURL: 069233348386.dkr.ecr.us-east-1.amazonaws.com/roboshop/mysql
   imageVersion: IMAGE_VERSION
+  storageClass: roboshop-ebs-sc
+  storageSize: 1Gi

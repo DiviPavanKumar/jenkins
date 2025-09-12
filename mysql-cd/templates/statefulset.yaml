@@ -4,7 +4,7 @@ metadata:
   name: mysql
   namespace: roboshop
 spec:
-  serviceName: mysql-headless-service   # ✅ Must match headless service name
+  serviceName: mysql-headless-service
   replicas: {{ .Values.statefulset.replicas }}
   minReadySeconds: 10
   selector:
@@ -23,38 +23,47 @@ spec:
       terminationGracePeriodSeconds: 10
       volumes:
         - name: mysql-secret
-          emptyDir: {}   # ✅ temporary volume shared between initContainer and main container
-      containers:
-        - name: mysql
-          image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"  # ✅ quotes recommended
-          imagePullPolicy: Always
-          volumeMounts:
-            - name: mysql-secret
-              mountPath: /tmp   # ✅ password will be placed here by initContainer
-            - name: mysql-storage
-              mountPath: /var/lib/mysql
+          emptyDir: {}
       initContainers:
         - name: fetch-secret
-          image: amazon/aws-cli
+          image: amazonlinux:2
           command:
             - sh
             - -c
             - |
+              yum install -y awscli jq && \
               aws secretsmanager get-secret-value \
-                --secret-id roboshop/mysql/password \
+                --secret-id arn:aws:secretsmanager:us-east-1:069233348386:secret:roboshop/mysql/password-* \
                 --query SecretString \
                 --output text | jq -r .MYSQL_ROOT_PASSWORD > /tmp/mysql_root_password.txt
+          env:
+            - name: AWS_REGION
+              value: {{ .Values.global.awsRegion }}
           volumeMounts:
-            - mountPath: /tmp
-              name: mysql-secret
-
+            - name: mysql-secret
+              mountPath: /tmp
+      containers:
+        - name: mysql
+          image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"
+          imagePullPolicy: Always
+          command:
+            - sh
+            - -c
+            - |
+              export MYSQL_ROOT_PASSWORD=$(cat /tmp/mysql_root_password.txt) && \
+              exec docker-entrypoint.sh mysqld
+          volumeMounts:
+            - name: mysql-secret
+              mountPath: /tmp
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
   volumeClaimTemplates:
     - metadata:
         name: mysql-storage
       spec:
         accessModes:
           - ReadWriteOnce
-        storageClassName: roboshop-ebs-sc
+        storageClassName: {{ .Values.statefulset.storageClass }}
         resources:
           requests:
-            storage: 1Gi
+            storage: {{ .Values.statefulset.storageSize }}
