@@ -26,27 +26,39 @@ spec:
           emptyDir: {}   # ✅ temporary volume shared between initContainer and main container
       containers:
         - name: mysql
-          image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"  # ✅ quotes recommended
+          image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"
           imagePullPolicy: Always
-          volumeMounts:
-            - name: mysql-secret
-              mountPath: /tmp   # ✅ password will be placed here by initContainer
-            - name: mysql-storage
-              mountPath: /var/lib/mysql
-      initContainers:
-        - name: fetch-secret
-          image: amazon/aws-cli
           command:
             - sh
             - -c
             - |
-              aws secretsmanager get-secret-value \
-                --secret-id roboshop/mysql/password \
-                --query SecretString \
-                --output text | jq -r .MYSQL_ROOT_PASSWORD > /tmp/mysql_root_password.txt
+              if [ -f /mnt/mysql_root_password.txt ]; then
+                export MYSQL_ROOT_PASSWORD=$(cat /mnt/mysql_root_password.txt)
+                echo "✅ Loaded MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD"
+              else
+                echo "❌ Password file not found!"
+                exit 1
+              fi
+              exec mysqld    # <— use this since roboshop image has no docker-entrypoint.sh
           volumeMounts:
-            - mountPath: /tmp
-              name: mysql-secret
+            - name: mysql-secret
+              mountPath: /mnt
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+      initContainers:
+      - name: fetch-secret
+        image: amazon/aws-cli:2.15.5
+        command:
+          - sh
+          - -c
+          - |
+            aws secretsmanager get-secret-value \
+              --secret-id roboshop/mysql/password \
+              --query SecretString \
+              --output text | jq -r .MYSQL_ROOT_PASSWORD > /mnt/mysql_root_password.txt
+        volumeMounts:
+          - name: mysql-secret
+            mountPath: /mnt
 
   volumeClaimTemplates:
     - metadata:
