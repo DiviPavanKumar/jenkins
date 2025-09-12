@@ -33,10 +33,10 @@ module "eks" {
   eks_managed_node_groups = {
     blue = {
       ami_type       = "AL2023_x86_64_STANDARD"
-      instance_types = ["m5.xlarge"]
+      instance_types = ["t3.medium"] #For Practice Only. Not for Production.
 
       min_size     = 2
-      max_size     = 10
+      max_size     = 5
       desired_size = 2
 
       iam_role_additional_policies = {
