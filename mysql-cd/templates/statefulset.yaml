@@ -31,7 +31,6 @@ spec:
             - sh
             - -c
             - |
-              yum install -y awscli jq && \
               aws secretsmanager get-secret-value \
                 --secret-id arn:aws:secretsmanager:us-east-1:069233348386:secret:roboshop/mysql/password-i5ohIz \
                 --query SecretString \
