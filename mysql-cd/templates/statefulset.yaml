@@ -4,7 +4,7 @@ metadata:
   name: mysql
   namespace: roboshop
 spec:
-  serviceName: mysql-headless-service
+  serviceName: mysql-headless-service   # ✅ Must match headless service name
   replicas: {{ .Values.statefulset.replicas }}
   minReadySeconds: 10
   selector:
@@ -23,7 +23,16 @@ spec:
       terminationGracePeriodSeconds: 10
       volumes:
         - name: mysql-secret
-          emptyDir: {}
+          emptyDir: {}   # ✅ temporary volume shared between initContainer and main container
+      containers:
+        - name: mysql
+          image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"  # ✅ quotes recommended
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: mysql-secret
+              mountPath: /tmp   # ✅ password will be placed here by initContainer
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
       initContainers:
         - name: fetch-secret
           image: amazon/aws-cli
@@ -34,30 +43,10 @@ spec:
               aws secretsmanager get-secret-value \
                 --secret-id roboshop/mysql/password \
                 --query SecretString \
-                --output text | jq -r .MYSQL_ROOT_PASSWORD > /run/secrets/mysql_root_password.txt
+                --output text | jq -r .MYSQL_ROOT_PASSWORD > /tmp/mysql_root_password.txt
           volumeMounts:
-            - name: mysql-secret
-              mountPath: /run/secrets
-      containers:
-        - name: mysql
-          image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"
-          imagePullPolicy: Always
-          command:
-            - sh
-            - -c
-            - |
-              if [ -f /run/secrets/mysql_root_password.txt ]; then
-                export MYSQL_ROOT_PASSWORD=$(cat /run/secrets/mysql_root_password.txt)
-              else
-                echo "❌ Password file not found!"
-                exit 1
-              fi
-              exec /entrypoint.sh mysqld
-          volumeMounts:
-            - name: mysql-secret
-              mountPath: /run/secrets
-            - name: mysql-storage
-              mountPath: /var/lib/mysql
+            - mountPath: /tmp
+              name: mysql-secret
 
   volumeClaimTemplates:
     - metadata:
