@@ -57,8 +57,19 @@ oidc_id=$(aws eks describe-cluster \
   --output text | awk -F'/' '{print $5}' | tr -d '"')
 echo $oidc_id
 
+D13F22ED1D02BCC94D6C58DF21ABD742
+
 # Verify OIDC provider exists
 aws iam list-open-id-connect-providers | grep $oidc_id || echo "OIDC provider not found"
+
+{
+    "OpenIDConnectProviderList": [
+        {
+            "Arn": "arn:aws:iam::069233348386:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/D13F22ED1D02BCC94D6C58DF21ABD742"
+        }
+    ]
+}
+
 
 ###6. Install Helm (if not installed)
 # Add EBS CSI driver repo
@@ -69,6 +80,8 @@ helm repo update
 helm upgrade --install aws-ebs-csi-driver \
     --namespace kube-system \
     aws-ebs-csi-driver/aws-ebs-csi-driver
+
+kubectl get pods -n kube-system | grep ebs-csi
 
 ###7. Create IAM Role for EBS CSI Driver
 

@@ -34,10 +34,26 @@ pipeline {
                             aws eks update-kubeconfig --region ${REGION} --name "${PROJECT}-${params.deploy_to}"
 
                             kubectl get nodes
+
+                            # ------------------------------
+                            # Step 0: Setup EBS CSI Driver with IRSA
+                            # ------------------------------
+                            chmod +x scripts/setup-ebs-csi.sh
+                            ./scripts/setup-ebs-csi.sh
+
+                            # ------------------------------
+                            # Step 1: Create Namespace
+                            # ------------------------------
                             kubectl apply -f mongodb-cd/namespace.yaml
+
+                            # ------------------------------
+                            # Step 2: Create StorageClass
+                            # ------------------------------
                             kubectl apply -f mongodb-cd/ebs-sc.yaml
 
-                            # Replace image tag in Helm values file
+                            # ------------------------------
+                            # Step 3: Deploy MongoDB via Helm
+                            # ------------------------------
                             sed -i "s/IMAGE_VERSION/${params.appVersion}/g" mongodb-cd/values-${params.deploy_to}.yaml
 
                             # Deploy using Helm
