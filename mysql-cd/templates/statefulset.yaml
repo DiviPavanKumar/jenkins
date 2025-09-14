@@ -4,7 +4,7 @@ metadata:
   name: mysql
   namespace: roboshop
 spec:
-  serviceName: mysql-headless-service   # Must match headless service name
+  serviceName: mysql-headless-service   # ✅ Must match headless service name
   replicas: {{ .Values.statefulset.replicas }}
   minReadySeconds: 10
   selector:
@@ -21,65 +21,32 @@ spec:
     spec:
       serviceAccountName: roboshop-mysql-secret-reader
       terminationGracePeriodSeconds: 10
-      securityContext:
-        fsGroup: 999        # ensures all volumes are writable by MySQL UID
       volumes:
         - name: mysql-secret
-          emptyDir: {}       # temporary volume shared between initContainer and main container
-      initContainers:
-        - name: fetch-secret
-          image: amazon/aws-cli:2.15.5
-          securityContext:
-            runAsUser: 0
-          command:
-            - sh
-            - -c
-            - |
-              echo "Fetching MySQL root password from AWS SecretsManager..."
-              SECRET_JSON=$(aws secretsmanager get-secret-value \
-                --secret-id roboshop/mysql/password \
-                --query SecretString --output text)
-              
-              MYSQL_ROOT_PASSWORD=$(echo $SECRET_JSON | python3 -c "import sys, json; print(json.load(sys.stdin)['MYSQL_ROOT_PASSWORD'])")
-              echo $MYSQL_ROOT_PASSWORD > /mnt/mysql_root_password.txt
-              chmod 600 /mnt/mysql_root_password.txt
-              chown 999:999 /mnt/mysql_root_password.txt
-              echo "✅ MySQL root password saved to /mnt/mysql_root_password.txt"
-          volumeMounts:
-            - name: mysql-secret
-              mountPath: /mnt
-
-        - name: fix-permissions
-          image: busybox
-          command: ["sh", "-c", "chown -R 999:999 /var/lib/mysql"]
-          volumeMounts:
-            - name: mysql-storage
-              mountPath: /var/lib/mysql
-
+          emptyDir: {}   # ✅ temporary volume shared between initContainer and main container
       containers:
         - name: mysql
-          image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"
+          image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"  # ✅ quotes recommended
           imagePullPolicy: Always
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
+          volumeMounts:
+            - name: mysql-secret
+              mountPath: /tmp   # ✅ password will be placed here by initContainer
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+      initContainers:
+        - name: fetch-secret
+          image: amazon/aws-cli
           command:
             - sh
             - -c
             - |
-              if [ -f /mnt/mysql_root_password.txt ]; then
-                export MYSQL_ROOT_PASSWORD=$(cat /mnt/mysql_root_password.txt)
-                echo "✅ Loaded MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD"
-              else
-                echo "❌ Password file not found!"
-                exit 1
-              fi
-              exec mysqld
+              aws secretsmanager get-secret-value \
+                --secret-id roboshop/mysql/password \
+                --query SecretString \
+                --output text | jq -r .MYSQL_ROOT_PASSWORD > /tmp/mysql_root_password.txt
           volumeMounts:
-            - name: mysql-secret
-              mountPath: /mnt
-            - name: mysql-storage
-              mountPath: /var/lib/mysql
+            - mountPath: /tmp
+              name: mysql-secret
 
   volumeClaimTemplates:
     - metadata:
