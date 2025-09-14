@@ -44,12 +44,19 @@ pipeline {
             }
         }
 
-        stage('Bastion & EKS') {
+        stage('Bastion, ACM and EKS') {
             parallel {
                 stage('Trigger Bastion') {
                     steps {
                         script {
                             build job: '03-bastion', propagate: false, wait: false
+                        }
+                    }
+                }
+                stage('Trigger ACM') {
+                    steps {
+                        script {
+                            build job: '04-acm', propagate: false, wait: true
                         }
                     }
                 }
@@ -59,14 +66,6 @@ pipeline {
                             build job: '06-eks-blue-green', propagate: false, wait: false
                         }
                     }
-                }
-            }
-        }
-
-        stage('Trigger ACM') {
-            steps {
-                script {
-                    build job: '04-acm', propagate: false, wait: true
                 }
             }
         }
