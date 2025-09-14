@@ -59,6 +59,7 @@ spec:
             - sh
             - -c
             - |
+              sleep 5
               if [ -f /mnt/mysql_root_password.txt ]; then
                 export MYSQL_ROOT_PASSWORD=$(cat /mnt/mysql_root_password.txt)
                 echo "✅ Loaded MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD"
