@@ -35,7 +35,7 @@ pipeline {
                             # Check cluster connectivity
                             kubectl get nodes
 
-                            chmod +x mysqlcd-/deploy-mysql.sh
+                            chmod +x mysql-cd/deploy-mysql.sh
                             .mysql-cd/deploy-mysql.sh dev 1.0 roboshop-dev us-east-1
 
                             # Replace image tag in Helm values file
