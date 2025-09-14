@@ -30,7 +30,7 @@ spec:
         - name: fetch-secret
           image: amazon/aws-cli:2.15.5
           securityContext:
-            runAsUser: 0      # ensure write access to /mnt
+            runAsUser: 0
           command:
             - sh
             - -c
@@ -42,24 +42,31 @@ spec:
               
               MYSQL_ROOT_PASSWORD=$(echo $SECRET_JSON | python3 -c "import sys, json; print(json.load(sys.stdin)['MYSQL_ROOT_PASSWORD'])")
               echo $MYSQL_ROOT_PASSWORD > /mnt/mysql_root_password.txt
-              chmod 644 /mnt/mysql_root_password.txt
+              chmod 600 /mnt/mysql_root_password.txt
               chown 999:999 /mnt/mysql_root_password.txt
               echo "✅ MySQL root password saved to /mnt/mysql_root_password.txt"
           volumeMounts:
             - name: mysql-secret
               mountPath: /mnt
+
+        - name: fix-permissions
+          image: busybox
+          command: ["sh", "-c", "chown -R 999:999 /var/lib/mysql"]
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+
       containers:
         - name: mysql
           image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"
           imagePullPolicy: Always
           securityContext:
-            runAsUser: 999      # MySQL default UID
-            runAsGroup: 999     # MySQL default GID
+            runAsUser: 999
+            runAsGroup: 999
           command:
             - sh
             - -c
             - |
-              sleep 60
               if [ -f /mnt/mysql_root_password.txt ]; then
                 export MYSQL_ROOT_PASSWORD=$(cat /mnt/mysql_root_password.txt)
                 echo "✅ Loaded MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD"
@@ -67,7 +74,7 @@ spec:
                 echo "❌ Password file not found!"
                 exit 1
               fi
-              exec mysqld  # use this since roboshop image has no docker-entrypoint.sh
+              exec mysqld
           volumeMounts:
             - name: mysql-secret
               mountPath: /mnt
