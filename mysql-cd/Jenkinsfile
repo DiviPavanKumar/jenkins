@@ -22,6 +22,73 @@ pipeline {
     }
 
     stages {
+        stage('Setup IAM for MySQL') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-config', region: "${REGION}") {
+                        sh '''
+                        set -e
+
+                        POLICY_NAME="RoboshopMySQLSecretReader"
+                        ROLE_NAME="RoboshopMySQLSecretReaderRole"
+                        SECRET_ARN="arn:aws:secretsmanager:${REGION}:${ACCOUNT_ID}:secret:${PROJECT}/mysql/password-*"
+                        SA_NAMESPACE="${PROJECT}"
+                        SA_NAME="roboshop-mysql-secret-reader"
+
+                        echo "🔹 Fetching OIDC provider for cluster..."
+                        OIDC_ID=$(aws eks describe-cluster --name ${PROJECT}-${deploy_to} --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\\/\\///")
+
+                        echo "🔹 Ensuring IAM Policy exists..."
+                        POLICY_ARN=$(aws iam list-policies --query "Policies[?PolicyName=='$POLICY_NAME'].Arn" --output text)
+                        if [ -z "$POLICY_ARN" ]; then
+                          cat > mysql-secret-policy.json <<EOF
+                        {
+                          "Version": "2012-10-17",
+                          "Statement": [
+                            {
+                              "Effect": "Allow",
+                              "Action": ["secretsmanager:GetSecretValue"],
+                              "Resource": "$SECRET_ARN"
+                            }
+                          ]
+                        }
+                        EOF
+                          aws iam create-policy --policy-name $POLICY_NAME --policy-document file://mysql-secret-policy.json
+                          POLICY_ARN=$(aws iam list-policies --query "Policies[?PolicyName=='$POLICY_NAME'].Arn" --output text)
+                        fi
+
+                        echo "🔹 Ensuring IAM Role exists..."
+                        if ! aws iam get-role --role-name $ROLE_NAME >/dev/null 2>&1; then
+                          cat > trust-policy.json <<EOF
+                        {
+                          "Version": "2012-10-17",
+                          "Statement": [
+                            {
+                              "Effect": "Allow",
+                              "Principal": {
+                                "Federated": "arn:aws:iam::${ACCOUNT_ID}:oidc-provider/$OIDC_ID"
+                              },
+                              "Action": "sts:AssumeRoleWithWebIdentity",
+                              "Condition": {
+                                "StringEquals": {
+                                  "$OIDC_ID:sub": "system:serviceaccount:$SA_NAMESPACE:$SA_NAME"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                        EOF
+                          aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document file://trust-policy.json
+                        fi
+
+                        echo "🔹 Attaching IAM Policy to Role..."
+                        aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN || true
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 script {
@@ -34,6 +101,17 @@ pipeline {
 
                             # Check cluster connectivity
                             kubectl get nodes
+
+                            # Ensure ServiceAccount exists with IRSA annotation
+                            cat > mysql-cd/roboshop-mysql-secret-reader-sa.yaml <<EOF
+                            apiVersion: v1
+                            kind: ServiceAccount
+                            metadata:
+                              name: roboshop-mysql-secret-reader
+                              namespace: ${PROJECT}
+                              annotations:
+                                eks.amazonaws.com/role-arn: arn:aws:iam::${ACCOUNT_ID}:role/RoboshopMySQLSecretReaderRole
+                            EOF
 
                             kubectl apply -f mysql-cd/roboshop-mysql-secret-reader-sa.yaml
 
