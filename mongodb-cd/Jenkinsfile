@@ -38,8 +38,8 @@ pipeline {
                             # ------------------------------
                             # Step 0: Setup EBS CSI Driver with IRSA
                             # ------------------------------
-                            
-                            ./scripts/setup-ebs-csi.sh
+                            chmod +x mongodb-cd/scripts/setup-ebs-csi.sh
+                            ./mongodb-cd/scripts/setup-ebs-csi.sh roboshop-dev us-east-1
 
                             # ------------------------------
                             # Step 1: Create Namespace
