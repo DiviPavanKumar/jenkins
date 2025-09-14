@@ -36,7 +36,7 @@ pipeline {
                             kubectl get nodes
 
                             chmod +x mysql-cd/deploy-mysql.sh
-                            .mysql-cd/deploy-mysql.sh dev 1.0 roboshop-dev us-east-1
+                            ./mysql-cd/deploy-mysql.sh roboshop-dev us-east-1
 
                             # Replace image tag in Helm values file
                             sed -i "s/IMAGE_VERSION/${params.appVersion}/g" mysql-cd/values-${params.deploy_to}.yaml
