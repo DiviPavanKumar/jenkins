@@ -38,7 +38,7 @@ pipeline {
                             # ------------------------------
                             # Step 0: Setup EBS CSI Driver with IRSA
                             # ------------------------------
-                            chmod +x scripts/setup-ebs-csi.sh
+                            chmod +x mongodb/scripts/setup-ebs-csi.sh
                             ./scripts/setup-ebs-csi.sh
 
                             # ------------------------------
