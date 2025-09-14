@@ -37,12 +37,13 @@ spec:
             - |
               echo "Fetching MySQL root password from AWS SecretsManager..."
               SECRET_JSON=$(aws secretsmanager get-secret-value \
-              --secret-id roboshop/mysql/password \
-              --query SecretString --output text)
-
+                --secret-id roboshop/mysql/password \
+                --query SecretString --output text)
+              
               MYSQL_ROOT_PASSWORD=$(echo $SECRET_JSON | python3 -c "import sys, json; print(json.load(sys.stdin)['MYSQL_ROOT_PASSWORD'])")
               echo $MYSQL_ROOT_PASSWORD > /mnt/mysql_root_password.txt
-              chmod 600 /mnt/mysql_root_password.txt
+              chmod 644 /mnt/mysql_root_password.txt
+              chown 999:999 /mnt/mysql_root_password.txt
               echo "✅ MySQL root password saved to /mnt/mysql_root_password.txt"
           volumeMounts:
             - name: mysql-secret
