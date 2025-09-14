@@ -21,9 +21,31 @@ spec:
     spec:
       serviceAccountName: roboshop-mysql-secret-reader
       terminationGracePeriodSeconds: 10
+      securityContext:
+        fsGroup: 0  # ensures mounted volumes are writable by non-root users
       volumes:
         - name: mysql-secret
-          emptyDir: {}   # ✅ temporary volume shared between initContainer and main container
+          emptyDir: {}   # temporary volume shared between initContainer and main container
+      initContainers:
+        - name: fetch-secret
+          image: amazon/aws-cli:2.15.5
+          securityContext:
+            runAsUser: 0  # ensure write access to /mnt
+          command:
+            - sh
+            - -c
+            - |
+              echo "Fetching MySQL root password from AWS SecretsManager..."
+              SECRET_JSON=$(aws secretsmanager get-secret-value \
+                --secret-id roboshop/mysql/password-i5ohIz \
+                --query SecretString --output text)
+              MYSQL_ROOT_PASSWORD=$(echo $SECRET_JSON | python3 -c "import sys, json; print(json.load(sys.stdin)['MYSQL_ROOT_PASSWORD'])")
+              echo $MYSQL_ROOT_PASSWORD > /mnt/mysql_root_password.txt
+              chmod 600 /mnt/mysql_root_password.txt
+              echo "✅ MySQL root password saved to /mnt/mysql_root_password.txt"
+          volumeMounts:
+            - name: mysql-secret
+              mountPath: /mnt
       containers:
         - name: mysql
           image: "{{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}"
@@ -39,26 +61,12 @@ spec:
                 echo "❌ Password file not found!"
                 exit 1
               fi
-              exec mysqld    # <— use this since roboshop image has no docker-entrypoint.sh
+              exec mysqld  # use this since roboshop image has no docker-entrypoint.sh
           volumeMounts:
             - name: mysql-secret
               mountPath: /mnt
             - name: mysql-storage
               mountPath: /var/lib/mysql
-      initContainers:
-      - name: fetch-secret
-        image: amazon/aws-cli:2.15.5
-        command:
-          - sh
-          - -c
-          - |
-            aws secretsmanager get-secret-value \
-              --secret-id roboshop/mysql/password \
-              --query SecretString \
-              --output text | jq -r .MYSQL_ROOT_PASSWORD > /mnt/mysql_root_password.txt
-        volumeMounts:
-          - name: mysql-secret
-            mountPath: /mnt
 
   volumeClaimTemplates:
     - metadata:
