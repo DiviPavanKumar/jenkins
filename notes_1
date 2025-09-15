@@ -1,0 +1,96 @@
+Issue Recap
+
+Catalogue pod health endpoint showed:
+
+{"app":"OK", "mongo": false}
+
+
+Pod was running, but could not connect to MongoDB.
+
+Root Causes
+
+DNS resolution issues – CoreDNS queries failing from some pods.
+
+Networking issues – Some worker nodes couldn’t communicate with other pods due to AWS VPC CNI or SG restrictions.
+
+Worker node Security Group – Missing SG rules to allow pod-to-pod traffic inside the cluster.
+
+Exact Steps We Followed
+Step 1: Verify CoreDNS
+kubectl get pods -n kube-system -l k8s-app=kube-dns
+kubectl logs -n kube-system -l k8s-app=kube-dns
+kubectl -n kube-system describe configmap coredns
+
+
+Confirmed CoreDNS pods were Running and config was correct.
+
+Step 2: Check pod DNS resolution
+kubectl run debug --rm -it --image=busybox -- /bin/sh
+cat /etc/resolv.conf
+nslookup kubernetes.default.svc.cluster.local
+nslookup catalogue.roboshop.svc.cluster.local
+
+
+Initially, DNS resolution failed intermittently.
+
+After redeploying debug pod, DNS resolution worked.
+
+Step 3: Verify AWS CNI (Networking)
+kubectl get daemonset aws-node -n kube-system -o wide
+kubectl -n kube-system logs -l k8s-app=aws-node
+
+
+All aws-node pods were running and no IP allocation issues were found.
+
+Step 4: Update Worker Node Security Group
+
+Identify worker node SG:
+
+aws ec2 describe-instances \
+  --filters "Name=tag:eks:cluster-name,Values=roboshop-dev" \
+  --query "Reservations[*].Instances[*].SecurityGroups[*].GroupId" \
+  --output text
+
+
+Describe SG to check rules:
+
+aws ec2 describe-security-groups --group-ids <worker-node-sg-id>
+
+
+Add inbound rules to allow all traffic from the same SG:
+
+Protocol: All
+
+Port Range: All
+
+Source: <worker-node-sg-id>
+
+✅ This allows pod-to-pod traffic across worker nodes, essential for DNS and MongoDB connectivity.
+
+Step 5: Test connectivity to MongoDB
+kubectl exec -it debug -- nslookup mongodb.roboshop.svc.cluster.local
+kubectl exec -it debug -- ping <mongodb-pod-ip>
+kubectl exec -it debug -- telnet mongodb 27017
+
+
+Verified debug pod can reach MongoDB via service name and direct pod IP.
+
+Step 6: Confirm Catalogue Pod Health
+curl http://catalogue:8080/health
+
+
+Now returns:
+
+{"app":"OK", "mongo": true}
+
+
+✅ Catalogue can now connect to MongoDB successfully.
+
+Summary of Fixes
+Step	Action
+1	Verified CoreDNS pods and config.
+2	Checked pod DNS resolution.
+3	Verified AWS CNI (aws-node) daemonset.
+4	Updated worker node security group to allow all inbound traffic from itself.
+5	Tested connectivity from debug pod to MongoDB.
+6	Confirmed catalogue health endpoint shows mongo: true.
