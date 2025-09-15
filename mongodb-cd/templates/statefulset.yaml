@@ -23,6 +23,9 @@ spec:
       containers:
         - name: mongodb
           image: {{ .Values.statefulset.imageURL }}:{{ .Values.statefulset.imageVersion }}
+          ports:
+          - containerPort: 27017
+            name: mongodb
           volumeMounts:
             - name: mongodb-storage
               mountPath: /data/db
