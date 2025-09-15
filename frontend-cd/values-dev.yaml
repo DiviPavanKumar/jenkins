@@ -4,5 +4,5 @@ deployment:
   imageVersion: IMAGE_VERSION
 
 hpa:
-  minreplicas: 3
-  maxreplicas: 5
+  minreplicas: 1
+  maxreplicas: 2
