@@ -3,5 +3,5 @@ deployment:
   imageURL: 069233348386.dkr.ecr.us-east-1.amazonaws.com/roboshop/payment
   imageVersion: IMAGE_VERSION
 hpa:
-  minreplicas: 3
-  maxreplicas: 5
+  minreplicas: 1
+  maxreplicas: 2
