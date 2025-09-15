@@ -36,12 +36,6 @@ pipeline {
                             kubectl get nodes
 
                             # ------------------------------
-                            # Step 0: Setup EBS CSI Driver with IRSA
-                            # ------------------------------
-                            chmod +x mongodb-cd/scripts/setup-ebs-csi.sh
-                            ./mongodb-cd/scripts/setup-ebs-csi.sh roboshop-dev us-east-1
-
-                            # ------------------------------
                             # Step 1: Create Namespace
                             # ------------------------------
                             kubectl apply -f mongodb-cd/namespace.yaml
@@ -50,6 +44,12 @@ pipeline {
                             # Step 2: Create StorageClass
                             # ------------------------------
                             kubectl apply -f mongodb-cd/ebs-sc.yaml
+
+                            # ------------------------------
+                            # Step 3: Setup EBS CSI Driver with IRSA
+                            # ------------------------------
+                            chmod +x mongodb-cd/scripts/setup-ebs-csi.sh
+                            ./mongodb-cd/scripts/setup-ebs-csi.sh roboshop-dev us-east-1
 
                             # ------------------------------
                             # Step 3: Deploy MongoDB via Helm
