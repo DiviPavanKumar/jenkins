@@ -10,7 +10,7 @@ NAMESPACE="kube-system"
 SERVICE_ACCOUNT="ebs-csi-controller-sa"
 IAM_ROLE="AmazonEKS_EBS_CSI_DriverRole"
 TRUST_POLICY_FILE="trust-policy.json"
-STORAGE_CLASS_NAME="roboshop-ebs-sc"
+# STORAGE_CLASS_NAME="roboshop-ebs-sc"
 
 # -----------------------------
 # Step 1: Get OIDC ID
