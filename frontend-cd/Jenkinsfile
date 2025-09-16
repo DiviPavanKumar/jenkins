@@ -1,3 +1,5 @@
+// Roboshop - frontend Deployment Pipeline
+
 pipeline {
     agent { label 'AGENT-1' }
 
@@ -15,7 +17,7 @@ pipeline {
     }
 
     parameters {
-        string(name: 'appVersion', description: 'Image version of the application', defaultValue: 'latest')
+        string(name: 'appVersion', description: 'Image version of the application')
         choice(name: 'deploy_to', choices: ['dev', 'qa', 'prod'], description: 'Target Environment')
     }
 
@@ -23,9 +25,6 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    if (!params.appVersion) {
-                        error "appVersion parameter is required!"
-                    }
                     withAWS(credentials: 'aws-config', region: "${REGION}") {
                         sh """
                             echo "Deploying ${SERVICE_NAME}:${params.appVersion} to ${params.deploy_to} cluster"
@@ -33,12 +32,11 @@ pipeline {
                             # Update kubeconfig for target cluster
                             aws eks update-kubeconfig --region ${REGION} --name "${PROJECT}-${params.deploy_to}"
 
-                            # Use temporary Helm values file
-                            cp frontend-cd/values-${params.deploy_to}.yaml /tmp/values.yaml
-                            sed -i "s/IMAGE_VERSION/${params.appVersion}/g" /tmp/values.yaml
+                            # Replace image tag in Helm values file
+                            sed -i "s/IMAGE_VERSION/${params.appVersion}/g" frontend-cd/values-${params.deploy_to}.yaml
 
-                            # Deploy using Helm and wait for pods to be ready
-                            helm upgrade --install ${SERVICE_NAME} -f /tmp/values.yaml -n ${PROJECT} frontend-cd/ --wait --timeout 5m
+                            # Deploy using Helm
+                            helm upgrade --install ${SERVICE_NAME} -f frontend-cd/values-${params.deploy_to}.yaml -n ${PROJECT} frontend-cd/
                         """
                     }
                 }
