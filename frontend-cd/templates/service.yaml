@@ -9,7 +9,6 @@ metadata:
     environment: dev
     project: roboshop
 spec:
-  type: LoadBalancer
   selector:
     tier: app
     component: frontend
