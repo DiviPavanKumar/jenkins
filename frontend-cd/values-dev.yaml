@@ -6,3 +6,7 @@ deployment:
 hpa:
   minreplicas: 1
   maxreplicas: 2
+
+ingress:
+  enabled: true
+  host: roboshop.devopspavandivi.shop

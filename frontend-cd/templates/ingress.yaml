@@ -4,19 +4,19 @@ metadata:
   name: frontend-ingress
   namespace: roboshop
   annotations:
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:069233348386:certificate/f5f7bd2e-6e81-480d-bbc6-a6eb188d1be9
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/group.name: albgroup
+    alb.ingress.kubernetes.io/group.name: roboshop-alb
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:069233348386:certificate/f5f7bd2e-6e81-480d-bbc6-a6eb188d1be9
 spec:
   ingressClassName: alb
   rules:
-    - host: "roboshop.devopspavandivi.shop"
+    - host: roboshop.devopspavandivi.shop
       http:
         paths:
           - pathType: Prefix
-            path: "/"
+            path: /
             backend:
               service:
                 name: frontend
